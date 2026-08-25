@@ -189,10 +189,10 @@ public class Main {
             System.out.println();
 
             System.out.println(
-                    "You have " + player.getCoins()
-                            + " coins and "
-                            + player.getHealth()
-                            + "/" + player.getMaxHealth()
+                    "You are level " + player.getLevel()
+                            + " (" + player.getXp() + "/" + player.getXpToNextLevel() + " XP), "
+                            + "with " + player.getCoins() + " coins and "
+                            + player.getHealth() + "/" + player.getMaxHealth()
                             + " health."
             );
 
@@ -215,15 +215,18 @@ public class Main {
 
             if (choice.equalsIgnoreCase("fight")) {
 
-                Enemy enemy =
-                        EnemyFactory.randomEnemy(gen);
+                Area area = chooseArea(input, player.getLevel());
 
-                Fight.start(
-                        input,
-                        gen,
-                        player,
-                        enemy
-                );
+                if (area != null) {
+                    Enemy enemy = EnemyFactory.randomEnemy(gen, area);
+
+                    Fight.start(
+                            input,
+                            gen,
+                            player,
+                            enemy
+                    );
+                }
             }
 
 
@@ -330,6 +333,53 @@ public class Main {
 
         // Close Scanner
         input.close();
+    }
+
+
+    // ==========================================================
+    // CHOOSE AREA
+    // ==========================================================
+    // Lets the player pick which zone to fight in. Shows the
+    // level range for each area and flags the recommended one
+    // based on the player's current level, but doesn't block
+    // picking a harder (or easier) area — that's the player's
+    // call. Returns null if the player backs out.
+    // ==========================================================
+
+    private static Area chooseArea(Scanner input, int playerLevel) {
+
+        Area recommended = Area.recommendedFor(playerLevel);
+        Area[] areas = Area.values();
+
+        System.out.println();
+        System.out.println("Choose an area to fight in:");
+
+        for (int i = 0; i < areas.length; i++) {
+            Area area = areas[i];
+            String tag = (area == recommended) ? "  <- recommended" : "";
+            System.out.println(
+                    (i + 1) + ". " + area.getDisplayName()
+                            + " (Lv " + area.getMinLevel() + "-" + area.getMaxLevel() + ")"
+                            + tag
+            );
+        }
+
+        System.out.println((areas.length + 1) + ". Cancel");
+
+        String choice = input.nextLine();
+
+        try {
+            int index = Integer.parseInt(choice.trim());
+
+            if (index >= 1 && index <= areas.length) {
+                return areas[index - 1];
+            }
+        } catch (NumberFormatException e) {
+            // fall through to invalid choice handling below
+        }
+
+        System.out.println("Cancelled.");
+        return null;
     }
 
 

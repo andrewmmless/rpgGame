@@ -29,6 +29,9 @@ public class SaveManager {
             writer.println("Coins=" + player.getCoins());
             writer.println("Potions=" + player.getPotions());
             writer.println("SwordDamage=" + player.getSwordDamage());
+            writer.println("Level=" + player.getLevel());
+            writer.println("Xp=" + player.getXp());
+            writer.println("XpToNextLevel=" + player.getXpToNextLevel());
 
             System.out.println("Game saved successfully!");
 
@@ -68,6 +71,9 @@ public class SaveManager {
         int coins = 0;
         int potions = 0;
         int swordDamage = 0;
+        int level = 1;
+        int xp = 0;
+        int xpToNextLevel = 20;
 
         try (BufferedReader reader =
                      new BufferedReader(new FileReader(file))) {
@@ -122,6 +128,18 @@ public class SaveManager {
                     case "SwordDamage":
                         swordDamage = Integer.parseInt(value);
                         break;
+
+                    case "Level":
+                        level = Integer.parseInt(value);
+                        break;
+
+                    case "Xp":
+                        xp = Integer.parseInt(value);
+                        break;
+
+                    case "XpToNextLevel":
+                        xpToNextLevel = Integer.parseInt(value);
+                        break;
                 }
             }
 
@@ -169,6 +187,9 @@ public class SaveManager {
             player.setCoins(coins);
             player.setPotions(potions);
             player.setSwordDamage(swordDamage);
+            player.setLevel(level);
+            player.setXp(xp);
+            player.setXpToNextLevel(xpToNextLevel);
 
             System.out.println("Game loaded successfully!");
 

@@ -16,7 +16,7 @@ import java.util.Scanner;
 public class Fight {
 
     public static void start(Scanner input, Random gen, Player player, Enemy enemy) {
-        System.out.println("You encountered a " + enemy.getName() + "!");
+        System.out.println("You encountered a Lv." + enemy.getLevel() + " " + enemy.getName() + "!");
         System.out.println(enemy.getName() + " - Health: " + enemy.getHealth()
                 + " Attack: " + enemy.getAttackPower() + " Defence: " + enemy.getDefence());
 
@@ -57,8 +57,10 @@ public class Fight {
 
             if (enemy.isDead()) {
                 int coinsGained = enemy.rollCoinReward(gen);
+                int xpGained = enemy.rollXpReward(gen);
                 player.addCoins(coinsGained);
                 System.out.println("Defeated " + enemy.getName() + "! Gained " + coinsGained + " coins.");
+                player.gainXp(xpGained);
             }
 
             if (player.isDead()) {

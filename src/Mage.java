@@ -37,4 +37,17 @@ public class Mage extends Player {
 
     public int getMana() { return mana; }
     public int getMaxMana() { return maxMana; }
+
+    public void setMana(int mana) { this.mana = mana; }
+    public void setMaxMana(int maxMana) { this.maxMana = maxMana; }
+
+    // Mage gets the normal stat growth from Player, plus extra
+    // max mana (and a full refill) since mana is Mage's whole thing.
+    @Override
+    protected void levelUp() {
+        super.levelUp();
+        maxMana += 4;
+        mana = maxMana;
+        System.out.println("Max Mana: " + maxMana);
+    }
 }
