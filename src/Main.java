@@ -1,88 +1,374 @@
-import java.util.Random;
-import java.util.Scanner;
-
 // ==========================================================
 // MAIN
 // ==========================================================
-// Notice how thin this is compared to the original v1/v2.
-// Main doesn't contain any game LOGIC anymore — it just
-// creates objects and calls their methods. All the actual
-// rules live inside the classes that own the relevant data.
+// Main handles the overall flow of the game.
+//
+// SaveManager handles:
+// - Saving
+// - Loading
+// - Deleting saves
+//
+// Main does not contain the actual game logic for fighting,
+// shopping, healing, etc. Those jobs belong to the other
+// classes.
 // ==========================================================
+
+import java.util.Random;
+import java.util.Scanner;
 
 public class Main {
 
     public static void main(String[] args) {
+
         Scanner input = new Scanner(System.in);
         Random gen = new Random();
 
-        System.out.println("Welcome to Andrew's adventure game v3 (OOP edition)");
-        System.out.println("Choose your class: Warrior, Mage, Cleric, Rogue");
-        String classChoice = input.nextLine();
+        System.out.println(
+                "Welcome to Andrew's adventure game v3 (OOP edition)"
+        );
 
-        System.out.println("Enter your character's name:");
-        String playerName = input.nextLine();
+        System.out.println();
 
-        Player player = createPlayer(classChoice, playerName);
-        if (player == null) {
-            System.out.println("That class is not available.");
+
+        // ==========================================================
+        // START MENU
+        // ==========================================================
+
+        System.out.println("1. New Game");
+        System.out.println("2. Load Game");
+        System.out.println("3. Delete Save");
+        System.out.println("4. Quit");
+        System.out.println();
+
+        System.out.print("Choose an option: ");
+
+        String menuChoice = input.nextLine();
+
+        Player player = null;
+
+
+        // ==========================================================
+        // NEW GAME
+        // ==========================================================
+
+        if (menuChoice.equals("1")) {
+
+            System.out.println();
+
+            System.out.println(
+                    "Choose your class: Warrior, Mage, Cleric, Rogue"
+            );
+
+            String classChoice = input.nextLine();
+
+            System.out.println();
+
+            System.out.println("Enter your character's name:");
+
+            String playerName = input.nextLine();
+
+
+            // Create the correct Player object
+            player = createPlayer(classChoice, playerName);
+
+
+            // Check if the class was valid
+            if (player == null) {
+
+                System.out.println(
+                        "That class is not available."
+                );
+
+                input.close();
+                return;
+            }
+
+
+            System.out.println();
+
+            System.out.println(
+                    "Welcome, " + player.getName()
+                            + " the " + classChoice + "!"
+            );
+        }
+
+
+        // ==========================================================
+        // LOAD GAME
+        // ==========================================================
+
+        else if (menuChoice.equals("2")) {
+
+            System.out.println();
+
+            System.out.println(
+                    "Enter the name of the character you want to load:"
+            );
+
+            String playerName = input.nextLine();
+
+
+            // Load the player from the save file
+            player = SaveManager.loadPlayer(playerName);
+
+
+            // If loading failed, go back to the menu/program
+            if (player == null) {
+
+                input.close();
+                return;
+            }
+
+
+            System.out.println();
+
+            System.out.println(
+                    "Welcome back, " + player.getName() + "!"
+            );
+        }
+
+
+        // ==========================================================
+        // DELETE SAVE
+        // ==========================================================
+
+        else if (menuChoice.equals("3")) {
+
+            System.out.println();
+
+            System.out.println(
+                    "Enter the name of the save you want to delete:"
+            );
+
+            String playerName = input.nextLine();
+
+
+            // Delete the save
+            SaveManager.deleteSave(playerName);
+
+
+            input.close();
             return;
         }
 
-        System.out.println("Welcome, " + player.getName() + " the " + classChoice + "!");
+
+        // ==========================================================
+        // QUIT
+        // ==========================================================
+
+        else if (menuChoice.equals("4")) {
+
+            System.out.println("Goodbye!");
+
+            input.close();
+            return;
+        }
+
+
+        // ==========================================================
+        // INVALID MENU CHOICE
+        // ==========================================================
+
+        else {
+
+            System.out.println("Invalid choice.");
+
+            input.close();
+            return;
+        }
+
+
+        // ==========================================================
+        // GAME LOOP
+        // ==========================================================
 
         boolean playing = true;
+
         while (playing && !player.isDead()) {
+
             System.out.println();
-            System.out.println("You have " + player.getCoins() + " coins and "
-                    + player.getHealth() + "/" + player.getMaxHealth() + " health.");
-            System.out.println("What would you like to do? (Fight, Shop, Heal, Coke, Quit)");
+
+            System.out.println(
+                    "You have " + player.getCoins()
+                            + " coins and "
+                            + player.getHealth()
+                            + "/" + player.getMaxHealth()
+                            + " health."
+            );
+
+            System.out.println();
+
+            System.out.println(
+                    "What would you like to do?"
+            );
+
+            System.out.println(
+                    "(Fight, Shop, Heal, Coke, Save, Quit)"
+            );
+
             String choice = input.nextLine();
 
+
+            // ======================================================
+            // FIGHT
+            // ======================================================
+
             if (choice.equalsIgnoreCase("fight")) {
-                Enemy enemy = EnemyFactory.randomEnemy(gen);
-                Fight.start(input, gen, player, enemy);
 
-            } else if (choice.equalsIgnoreCase("shop")) {
+                Enemy enemy =
+                        EnemyFactory.randomEnemy(gen);
+
+                Fight.start(
+                        input,
+                        gen,
+                        player,
+                        enemy
+                );
+            }
+
+
+            // ======================================================
+            // SHOP
+            // ======================================================
+
+            else if (choice.equalsIgnoreCase("shop")) {
+
                 Shop.enter(input, player);
+            }
 
-            } else if (choice.equalsIgnoreCase("heal")) {
+
+            // ======================================================
+            // HEAL
+            // ======================================================
+
+            else if (choice.equalsIgnoreCase("heal")) {
+
                 player.usePotion();
+            }
 
-            } else if (choice.equalsIgnoreCase("coke")) {
+
+            // ======================================================
+            // COKE
+            // ======================================================
+
+            else if (choice.equalsIgnoreCase("coke")) {
+
                 Items.drinkCoke(gen, player);
+            }
 
-            } else if (choice.equalsIgnoreCase("quit")) {
+
+            // ======================================================
+            // SAVE
+            // ======================================================
+
+            else if (choice.equalsIgnoreCase("save")) {
+
+                SaveManager.savePlayer(player);
+            }
+
+
+            // ======================================================
+            // QUIT
+            // ======================================================
+
+            else if (choice.equalsIgnoreCase("quit")) {
+
+                // Automatically save before quitting
+                SaveManager.savePlayer(player);
+
                 playing = false;
+            }
 
-            } else {
-                System.out.println("Invalid choice.");
+
+            // ======================================================
+            // INVALID COMMAND
+            // ======================================================
+
+            else {
+
+                System.out.println(
+                        "Invalid choice."
+                );
             }
         }
 
+
+        // ==========================================================
+        // PLAYER DIED
+        // ==========================================================
+
         if (player.isDead()) {
+
+            // Delete the player's save because they died
+            SaveManager.deleteSave(
+                    player.getName()
+            );
+
+            System.out.println();
             System.out.println("=====================");
             System.out.println("GAME OVER");
             System.out.println("=====================");
-        } else {
-            System.out.println("Thanks for playing!");
+
+            System.out.println(
+                    "Your save has been deleted."
+            );
         }
 
+
+        // ==========================================================
+        // PLAYER QUIT
+        // ==========================================================
+
+        else {
+
+            System.out.println();
+            System.out.println(
+                    "Thanks for playing!"
+            );
+        }
+
+
+        // Close Scanner
         input.close();
     }
 
-    // Central place that turns a typed class name into the right object.
-    // Adding a 5th class later = one more "else if" here, nothing else changes.
-    private static Player createPlayer(String classChoice, String name) {
+
+    // ==========================================================
+    // CREATE PLAYER
+    // ==========================================================
+    // Takes the class name the player typed and creates the
+    // correct type of Player.
+    //
+    // Example:
+    //
+    // "Warrior" -> new Warrior(name)
+    // "Mage"    -> new Mage(name)
+    // "Cleric"  -> new Cleric(name)
+    // "Rogue"   -> new Rogue(name)
+    // ==========================================================
+
+    private static Player createPlayer(
+            String classChoice,
+            String name) {
+
         if (classChoice.equalsIgnoreCase("Warrior")) {
+
             return new Warrior(name);
+
         } else if (classChoice.equalsIgnoreCase("Mage")) {
+
             return new Mage(name);
+
         } else if (classChoice.equalsIgnoreCase("Cleric")) {
+
             return new Cleric(name);
+
         } else if (classChoice.equalsIgnoreCase("Rogue")) {
+
             return new Rogue(name);
+
         } else {
+
             return null;
         }
     }
