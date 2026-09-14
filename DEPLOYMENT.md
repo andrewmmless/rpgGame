@@ -1,4 +1,4 @@
-# Put Hearthglen online
+# Put Wayfarer online
 
 The game is packaged as one Spring Boot application: the browser UI and Java API share one origin. Docker and a Render blueprint are included. The remaining external step is connecting your hosting and database accounts.
 

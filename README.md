@@ -1,4 +1,4 @@
-# Hearthglen — Andrew's RPG
+# Wayfarer
 
 A playable Java browser RPG, built on the V4 foundation. Four classes, four regions, five-stop expeditions, boss encounters, equipment, quests, accounts, and database-backed autosaves.
 

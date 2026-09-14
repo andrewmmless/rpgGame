@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: hearthglen-rpg
+    name: wayfarer-rpg
     runtime: docker
     plan: free
     branch: rework
