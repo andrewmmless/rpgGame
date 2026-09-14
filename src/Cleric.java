@@ -1,18 +1,7 @@
-// ==========================================================
-// CLERIC — extends Player
-// ==========================================================
-// Balanced stats, unique ability: can heal without a potion.
-// ==========================================================
+import java.util.List;
+public final class Cleric extends Player {
+    private static final List<Ability> ABILITIES=List.of(new Ability("prayer","Prayer",14,3,1,(user,target,random,events)->{int before=user.getHealth();user.heal(user.getMaxHealth()*30/100);events.add("Prayer restored "+(user.getHealth()-before)+" health.");}));
+    public Cleric(String name){super(name,PlayerClass.CLERIC);}
+    @Override public List<Ability> getAbilities(){return ABILITIES;}
 
-public class Cleric extends Player {
-
-    public Cleric(String name) {
-        super(name, 24, 4, 3);
-    }
-
-    public void prayer() {
-        int healAmount = 12;
-        heal(healAmount); // heal() is inherited from Character
-        System.out.println(name + " prays and recovers " + healAmount + " health. Health: " + health + "/" + maxHealth);
-    }
 }

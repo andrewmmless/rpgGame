@@ -1,209 +1,40 @@
-// ==========================================================
-// PLAYER — extends Character
-// ==========================================================
-// Inherits name/health/attackPower/defence/takeDamage()/isDead()
-// from Character automatically. Only adds what's UNIQUE to a
-// player: coins, potions, sword upgrades.
-//
-// Warrior/Mage/Cleric/Rogue each extend THIS class, so they get
-// coins/potions too, plus their own special flavor on top.
-// ==========================================================
+import java.util.*;
 
-public class Player extends Character {
-
-    protected int coins;
-    protected int potions;
-    protected int swordDamage;
-
-    protected int level;
-    protected int xp;
-    protected int xpToNextLevel;
-
-    public Player(String name, int health, int attackPower, int defence) {
-        super(name, health, attackPower, defence);
-
-        this.coins = 0;
-        this.potions = 0;
-        this.swordDamage = 0;
-
-        this.level = 1;
-        this.xp = 0;
-        this.xpToNextLevel = xpNeededFor(level);
+public abstract class Player extends Character {
+    private final PlayerClass playerClass;
+    private int level=1, xp, coins, potions=3, swordDamage, resource=40;
+    protected Player(String name, PlayerClass type) {
+        super(name,type.health,type.attack,type.armour); playerClass=type;
     }
-
-
-    // ==========================================================
-    // LEVELING
-    // ==========================================================
-    // gainXp() is what Fight calls after a win. It adds XP, then
-    // loops levelUp() in case one kill provides enough XP to
-    // clear more than one level at once (e.g. a mini-boss kill).
-    // ==========================================================
-
+    public final PlayerClass getPlayerClass(){return playerClass;}
+    public abstract List<Ability> getAbilities();
+    public List<Ability> getAvailableAbilities(){return getAbilities().stream().filter(a->a.unlockLevel()<=level).toList();}
+    public double getFleeChance(){return 0.65;}
+    public int getResource(){return resource;} public int getMaxResource(){return 40+2*(level-1);}
+    public void setResource(int amount){resource=Math.max(0,Math.min(getMaxResource(),amount));}
+    public void restoreResource(int amount){if(amount<0)throw new IllegalArgumentException(); setResource(resource+amount);}
+    public void spendResource(int amount){if(amount<0 || amount>resource)throw new IllegalArgumentException(); resource-=amount;}
     public void gainXp(int amount) {
-        xp += amount;
-        System.out.println(name + " gained " + amount + " XP.");
-
-        while (xp >= xpToNextLevel) {
-            xp -= xpToNextLevel;
-            levelUp();
+        if(amount<0)throw new IllegalArgumentException("Negative XP");
+        long total=(long)xp+amount;
+        while(level<Balance.MAX_LEVEL && total>=Balance.xpNeeded(level)) {
+            total-=Balance.xpNeeded(level); level++; recalculateStats(); health=maxHealth; resource=getMaxResource();
         }
+        xp=level==Balance.MAX_LEVEL?0:(int)total;
     }
-
-    // How much XP is needed to clear a given level. Grows each
-    // level so higher levels take progressively longer to reach.
-    protected int xpNeededFor(int atLevel) {
-        return 20 + (atLevel - 1) * 15;
-    }
-
-    // Subclasses (like Mage, for mana) can override this to add
-    // their own bonus on top, as long as they call super.levelUp().
-    protected void levelUp() {
-        level++;
-
-        maxHealth += 6;
-        attackPower += 2;
-        defence += 1;
-        health = maxHealth; // level up fully restores health
-
-        xpToNextLevel = xpNeededFor(level);
-
-        System.out.println();
-        System.out.println(name + " leveled up! Now level " + level + ".");
-        System.out.println("Max Health: " + maxHealth
-                + " | Attack: " + attackPower
-                + " | Defence: " + defence);
-    }
-
-    public int getLevel() { return level; }
-    public int getXp() { return xp; }
-    public int getXpToNextLevel() { return xpToNextLevel; }
-
-    // Used when loading a saved game
-    public void setLevel(int level) { this.level = level; }
-    public void setXp(int xp) { this.xp = xp; }
-    public void setXpToNextLevel(int xpToNextLevel) { this.xpToNextLevel = xpToNextLevel; }
-
-
-    // ==========================================================
-    // COIN MANAGEMENT
-    // ==========================================================
-
-    public void addCoins(int amount) {
-        coins += amount;
-    }
-
-    public boolean spendCoins(int amount) {
-
-        if (amount > coins) {
-            System.out.println(
-                    "Not enough coins! You have " + coins + "."
-            );
-            return false;
-        }
-
-        coins -= amount;
-        return true;
-    }
-
-    public int getCoins() {
-        return coins;
-    }
-
-    // Used when loading a saved game
-    public void setCoins(int coins) {
-        this.coins = coins;
-    }
-
-
-    // ==========================================================
-    // POTIONS
-    // ==========================================================
-
-    public void addPotion() {
-        potions++;
-    }
-
-    public boolean usePotion() {
-
-        if (potions <= 0) {
-            System.out.println("You have no potions.");
-            return false;
-        }
-
-        potions--;
-
-        heal(10);
-
-        System.out.println(
-                "Used a potion. Health: "
-                        + health + "/" + maxHealth
-        );
-
-        return true;
-    }
-
-    public int getPotions() {
-        return potions;
-    }
-
-    // Used when loading a saved game
-    public void setPotions(int potions) {
-        this.potions = potions;
-    }
-
-
-    // ==========================================================
-    // SWORD UPGRADES
-    // ==========================================================
-
-    public void upgradeSword(int amount) {
-        swordDamage += amount;
-    }
-
-    public int getSwordDamage() {
-        return swordDamage;
-    }
-
-    // Used when loading a saved game
-    public void setSwordDamage(int swordDamage) {
-        this.swordDamage = swordDamage;
-    }
-
-
-    // ==========================================================
-    // SAVING / LOADING HEALTH AND STATS
-    // ==========================================================
-    // These methods allow SaveManager to restore the player's
-    // stats when loading a saved game.
-    // ==========================================================
-
-    public void setHealth(int health) {
-        this.health = health;
-    }
-
-    public void setMaxHealth(int maxHealth) {
-        this.maxHealth = maxHealth;
-    }
-
-    public void setAttackPower(int attackPower) {
-        this.attackPower = attackPower;
-    }
-
-    public void setDefence(int defence) {
-        this.defence = defence;
-    }
-
-
-    // ==========================================================
-    // PLAYER ATTACK
-    // ==========================================================
-    // Player's attack includes their sword bonus on top of the
-    // base roll from Character.
-    // ==========================================================
-
-    @Override
-    public int rollDamage(java.util.Random gen, int min, int max) {
-        return super.rollDamage(gen, min, max) + swordDamage;
-    }
+    private void recalculateStats(){maxHealth=playerClass.health+10*(level-1); attackPower=playerClass.attack+3*(level-1); defence=playerClass.armour+2*(level-1); health=Math.min(health,maxHealth);}
+    public int getLevel(){return level;} public int getXp(){return xp;}
+    public int getXpToNextLevel(){return level==Balance.MAX_LEVEL?0:Balance.xpNeeded(level);}
+    public void setLevel(int value){if(value<1||value>Balance.MAX_LEVEL)throw new IllegalArgumentException(); level=value; recalculateStats(); resource=Math.min(resource,getMaxResource());}
+    public void setXp(int value){if(value<0 || (level<Balance.MAX_LEVEL && value>=getXpToNextLevel()))throw new IllegalArgumentException(); xp=level==Balance.MAX_LEVEL?0:value;}
+    public int getCoins(){return coins;} public void setCoins(int value){if(value<0)throw new IllegalArgumentException(); coins=value;}
+    public void addCoins(int amount){if(amount<0)throw new IllegalArgumentException(); coins=Math.addExact(coins,amount);}
+    public boolean spendCoins(int amount){if(amount<0)throw new IllegalArgumentException(); if(amount>coins)return false; coins-=amount;return true;}
+    public int getPotions(){return potions;} public void setPotions(int value){if(value<0)throw new IllegalArgumentException();potions=value;}
+    public void addPotion(){potions++;}
+    public boolean usePotion(){if(potions==0 || health==maxHealth || isDead())return false;potions--;heal(Math.max(1,maxHealth*40/100));return true;}
+    public int getSwordDamage(){return swordDamage;} public void setSwordDamage(int value){if(value<0)throw new IllegalArgumentException(); swordDamage=value;}
+    public void upgradeSword(int amount){if(amount<0)throw new IllegalArgumentException();swordDamage=Math.addExact(swordDamage,amount);}
+    public void setHealth(int value){health=Math.max(0,Math.min(maxHealth,value));}
+    @Override public int rollDamage(Random random,int min,int max){return super.rollDamage(random,min,max)+swordDamage;}
 }

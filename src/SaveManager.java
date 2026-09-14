@@ -1,268 +1,58 @@
 import java.io.*;
+import java.nio.file.*;
+import java.util.*;
 
-public class SaveManager {
-
-    private static final String SAVE_FOLDER = "saves";
-
-    // ==========================================================
-    // SAVE PLAYER
-    // ==========================================================
-
+/** Console persistence adapter. V4 saves are separate; legacy files are only read. */
+public final class SaveManager {
+    private static final Path SAVE_FOLDER=Path.of("saves-v4");
+    private static Path path(Path folder,String name) {
+        if(name==null || !name.matches("[\\p{L}\\p{N} _-]{1,60}"))throw new IllegalArgumentException("Use a name containing letters, numbers, spaces, _ or - (1–60 characters).");
+        return folder.resolve(name+".txt");
+    }
     public static void savePlayer(Player player) {
-
-        File folder = new File(SAVE_FOLDER);
-
-        if (!folder.exists()) {
-            folder.mkdirs();
-        }
-
-        String fileName = SAVE_FOLDER + "/" + player.getName() + ".txt";
-
-        try (PrintWriter writer = new PrintWriter(new FileWriter(fileName))) {
-
-            writer.println("Name=" + player.getName());
-            writer.println("Class=" + getPlayerClass(player));
-            writer.println("Health=" + player.getHealth());
-            writer.println("MaxHealth=" + player.getMaxHealth());
-            writer.println("AttackPower=" + player.getAttackPower());
-            writer.println("Defence=" + player.getDefence());
-            writer.println("Coins=" + player.getCoins());
-            writer.println("Potions=" + player.getPotions());
-            writer.println("SwordDamage=" + player.getSwordDamage());
-            writer.println("Level=" + player.getLevel());
-            writer.println("Xp=" + player.getXp());
-            writer.println("XpToNextLevel=" + player.getXpToNextLevel());
-
+        try {
+            Path file=path(SAVE_FOLDER,player.getName()); Files.createDirectories(SAVE_FOLDER);
+            Properties data=new Properties();
+            data.setProperty("Version","4"); data.setProperty("Name",player.getName());
+            data.setProperty("Class",player.getPlayerClass().name());
+            data.setProperty("Level",""+player.getLevel()); data.setProperty("Xp",""+player.getXp());
+            data.setProperty("Health",""+player.getHealth());data.setProperty("Resource",""+player.getResource());
+            data.setProperty("Coins",""+player.getCoins());data.setProperty("Potions",""+player.getPotions());
+            data.setProperty("SwordDamage",""+player.getSwordDamage());
+            Path temporary=Files.createTempFile(SAVE_FOLDER,"save-",".tmp");
+            try {
+                try(Writer writer=Files.newBufferedWriter(temporary)){data.store(writer,"RPG V4 foundation");}
+                try { Files.move(temporary,file,StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE); }
+                catch(AtomicMoveNotSupportedException e){Files.move(temporary,file,StandardCopyOption.REPLACE_EXISTING);}
+            } finally {Files.deleteIfExists(temporary);}
             System.out.println("Game saved successfully!");
-
-        } catch (IOException e) {
-
-            System.out.println("Could not save the game.");
-            e.printStackTrace();
-        }
+        } catch(IOException|IllegalArgumentException e){System.out.println("Could not save: "+e.getMessage());}
     }
-
-
-    // ==========================================================
-    // LOAD PLAYER
-    // ==========================================================
-
-    public static Player loadPlayer(String playerName) {
-
-        String fileName = SAVE_FOLDER + "/" + playerName + ".txt";
-        File file = new File(fileName);
-
-        if (!file.exists()) {
-
-            System.out.println(
-                    "No save file found for " + playerName + "."
-            );
-
-            return null;
-        }
-
-        String name = "";
-        String className = "";
-
-        int health = 0;
-        int maxHealth = 0;
-        int attackPower = 0;
-        int defence = 0;
-        int coins = 0;
-        int potions = 0;
-        int swordDamage = 0;
-        int level = 1;
-        int xp = 0;
-        int xpToNextLevel = 20;
-
-        try (BufferedReader reader =
-                     new BufferedReader(new FileReader(file))) {
-
-            String line;
-
-            while ((line = reader.readLine()) != null) {
-
-                String[] parts = line.split("=", 2);
-
-                if (parts.length != 2) {
-                    continue;
-                }
-
-                String key = parts[0];
-                String value = parts[1];
-
-                switch (key) {
-
-                    case "Name":
-                        name = value;
-                        break;
-
-                    case "Class":
-                        className = value;
-                        break;
-
-                    case "Health":
-                        health = Integer.parseInt(value);
-                        break;
-
-                    case "MaxHealth":
-                        maxHealth = Integer.parseInt(value);
-                        break;
-
-                    case "AttackPower":
-                        attackPower = Integer.parseInt(value);
-                        break;
-
-                    case "Defence":
-                        defence = Integer.parseInt(value);
-                        break;
-
-                    case "Coins":
-                        coins = Integer.parseInt(value);
-                        break;
-
-                    case "Potions":
-                        potions = Integer.parseInt(value);
-                        break;
-
-                    case "SwordDamage":
-                        swordDamage = Integer.parseInt(value);
-                        break;
-
-                    case "Level":
-                        level = Integer.parseInt(value);
-                        break;
-
-                    case "Xp":
-                        xp = Integer.parseInt(value);
-                        break;
-
-                    case "XpToNextLevel":
-                        xpToNextLevel = Integer.parseInt(value);
-                        break;
-                }
-            }
-
-
-            // ======================================================
-            // CREATE THE CORRECT PLAYER CLASS
-            // ======================================================
-
-            Player player;
-
-            if (className.equalsIgnoreCase("Warrior")) {
-
-                player = new Warrior(name);
-
-            } else if (className.equalsIgnoreCase("Mage")) {
-
-                player = new Mage(name);
-
-            } else if (className.equalsIgnoreCase("Cleric")) {
-
-                player = new Cleric(name);
-
-            } else if (className.equalsIgnoreCase("Rogue")) {
-
-                player = new Rogue(name);
-
-            } else {
-
-                System.out.println(
-                        "Unknown player class in save file."
-                );
-
-                return null;
-            }
-
-
-            // ======================================================
-            // RESTORE SAVED STATS
-            // ======================================================
-
-            player.setHealth(health);
-            player.setMaxHealth(maxHealth);
-            player.setAttackPower(attackPower);
-            player.setDefence(defence);
-            player.setCoins(coins);
-            player.setPotions(potions);
-            player.setSwordDamage(swordDamage);
-            player.setLevel(level);
+    public static Player loadPlayer(String name) {
+        try {
+            Path file=path(SAVE_FOLDER,name);
+            if(!Files.exists(file))file=path(Path.of("saves"),name);
+            Properties data=new Properties();
+            try(Reader reader=Files.newBufferedReader(file)){data.load(reader);}
+            String version=data.getProperty("Version","3");
+            if(!version.equals("3")&&!version.equals("4"))throw new IllegalArgumentException("Unsupported save version");
+            String savedName=data.getProperty("Name",name);path(SAVE_FOLDER,savedName);
+            Player player=PlayerClass.valueOf(data.getProperty("Class","").toUpperCase(Locale.ROOT)).create(savedName);
+            player.setLevel(number(data,"Level",1));
+            // Convert old fractional level progress, since V4 uses a different XP curve.
+            int xp=number(data,"Xp",0);
+            if(version.equals("3"))xp=(int)Math.min(Math.max(0,player.getXpToNextLevel()-1),(long)xp*player.getXpToNextLevel()/Math.max(1,number(data,"XpToNextLevel",20)));
             player.setXp(xp);
-            player.setXpToNextLevel(xpToNextLevel);
-
-            System.out.println("Game loaded successfully!");
-
-            return player;
-
-        } catch (IOException | NumberFormatException e) {
-
-            System.out.println("Could not load the game.");
-            e.printStackTrace();
-
-            return null;
-        }
+            int hp=number(data,"Health",player.getMaxHealth());
+            if(version.equals("3"))hp=(int)Math.min(player.getMaxHealth(),(long)hp*player.getMaxHealth()/Math.max(1,number(data,"MaxHealth",player.getMaxHealth())));
+            player.setHealth(hp);player.setResource(number(data,"Resource",player.getMaxResource()));
+            player.setCoins(number(data,"Coins",0));player.setPotions(number(data,"Potions",3));player.setSwordDamage(number(data,"SwordDamage",0));
+            System.out.println("Game loaded successfully!");return player;
+        } catch(IOException|IllegalArgumentException e){System.out.println("Could not load: "+e.getMessage());return null;}
     }
-
-
-    // ==========================================================
-    // GET PLAYER CLASS
-    // ==========================================================
-
-    private static String getPlayerClass(Player player) {
-
-        if (player instanceof Warrior) {
-
-            return "Warrior";
-
-        } else if (player instanceof Mage) {
-
-            return "Mage";
-
-        } else if (player instanceof Cleric) {
-
-            return "Cleric";
-
-        } else if (player instanceof Rogue) {
-
-            return "Rogue";
-        }
-
-        return "Unknown";
-    }
-
-
-    // ==========================================================
-    // DELETE SAVE
-    // ==========================================================
-
-    public static void deleteSave(String playerName) {
-
-        String fileName = SAVE_FOLDER + "/" + playerName + ".txt";
-
-        File file = new File(fileName);
-
-        if (!file.exists()) {
-
-            System.out.println(
-                    "No save file found for " + playerName + "."
-            );
-
-            return;
-        }
-
-        if (file.delete()) {
-
-            System.out.println(
-                    "Save for " + playerName
-                            + " deleted successfully!"
-            );
-
-        } else {
-
-            System.out.println(
-                    "Could not delete the save."
-            );
-        }
+    private static int number(Properties data,String key,int fallback){int value=Integer.parseInt(data.getProperty(key,""+fallback));if(value<0)throw new IllegalArgumentException("Negative "+key);return value;}
+    public static void deleteSave(String name) {
+        try {System.out.println(Files.deleteIfExists(path(SAVE_FOLDER,name))?"V4 save deleted.":"No V4 save found.");}
+        catch(IOException|IllegalArgumentException e){System.out.println("Could not delete save: "+e.getMessage());}
     }
 }

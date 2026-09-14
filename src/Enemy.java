@@ -1,21 +1,4 @@
-// ==========================================================
-// ENEMY — extends Character
-// ==========================================================
-// DESIGN NOTE: Goblin/Wolf/Victoria are NOT separate subclasses
-// here. They're just different OBJECTS built from this one
-// Enemy class, each with their own stats passed into the
-// constructor. This is the key lesson from earlier: you don't
-// need a new class for every enemy, just a new object.
-//
-// (Subclassing is for when behavior genuinely differs, like
-// Mage having mana. Enemies here only differ in numbers, so
-// plain instantiation is the right tool, not inheritance.)
-//
-// "level" is just a display/balance label (what tier of area
-// this enemy belongs to) — it doesn't change any formulas.
-// It's the coin/xp rewards and raw stats that actually matter.
-// ==========================================================
-
+/** Encounter stats and reward ranges, independent of presentation. */
 public class Enemy extends Character {
 
     private int level;
@@ -28,6 +11,8 @@ public class Enemy extends Character {
                  int coinRewardMin, int coinRewardMax,
                  int xpRewardMin, int xpRewardMax) {
         super(name, health, attackPower, defence);
+        if(level<1 || level>Balance.MAX_LEVEL || coinRewardMin<0 || coinRewardMax<coinRewardMin || xpRewardMin<0 || xpRewardMax<xpRewardMin)
+            throw new IllegalArgumentException("Invalid enemy rewards or level");
         this.level = level;
         this.coinRewardMin = coinRewardMin;
         this.coinRewardMax = coinRewardMax;

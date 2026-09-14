@@ -1,63 +1,54 @@
-import java.util.Random;
+import java.util.*;
 
-// ==========================================================
-// CHARACTER — the shared parent class
-// ==========================================================
-// Both Player and Enemy "extend" this class, meaning they
-// automatically inherit everything below without retyping it.
-//
-// "protected" (instead of private) is what lets Player and
-// Enemy reach into these fields directly, since they're
-// child classes — outside classes like Main still cannot.
-// ==========================================================
-
-public class Character {
-
-    protected String name;
-    protected int health;
-    protected int maxHealth;
-    protected int attackPower;
-    protected int defence;
-
-    public Character(String name, int health, int attackPower, int defence) {
-        this.name = name;
-        this.health = health;
-        this.maxHealth = health;
-        this.attackPower = attackPower;
-        this.defence = defence;
+public abstract class Character {
+    protected final String name;
+    protected int health, maxHealth, attackPower, defence;
+    private final Map<String, ActiveStatus> statuses = new LinkedHashMap<>();
+    private final EnumMap<DamageType, Double> resistances = new EnumMap<>(DamageType.class);
+    private static final class ActiveStatus {
+        final StatusEffect effect; int remaining;
+        ActiveStatus(StatusEffect effect) { this.effect=effect; remaining=effect.duration(); }
     }
-
-    // ---- shared behavior every Character has ----
-
-    public void takeDamage(int amount) {
-        // defence reduces incoming damage, minimum 1 damage always gets through
-        int reduced = Math.max(1, amount - defence);
-        health -= reduced;
-        if (health < 0) health = 0;
-        System.out.println(name + " took " + reduced + " damage. Health: " + health + "/" + maxHealth);
+    protected Character(String name, int health, int attackPower, int defence) {
+        if (name == null || name.isBlank() || health < 1 || attackPower < 0 || defence < 0)
+            throw new IllegalArgumentException("Invalid character");
+        this.name=name; this.health=health; maxHealth=health; this.attackPower=attackPower; this.defence=defence;
     }
-
-    public void heal(int amount) {
-        health += amount;
-        if (health > maxHealth) health = maxHealth;
+    public void takeDamage(int amount) { receiveDamage(amount, DamageType.PHYSICAL); }
+    public int receiveDamage(int amount, DamageType type) {
+        Objects.requireNonNull(type);
+        int damage=Balance.damage(amount, defence, type);
+        if (type != DamageType.TRUE) damage=(int)Math.round(damage * (1-resistances.getOrDefault(type, 0.0)));
+        if (hasStatus(StatusEffect.Kind.GUARD)) damage=(int)Math.ceil(damage * 0.5);
+        int dealt=Math.min(health, damage); health-=dealt; return dealt;
     }
-
-    public boolean isDead() {
-        return health <= 0;
+    public void setResistance(DamageType type, double resistance) {
+        if (!Double.isFinite(resistance) || resistance < -1 || resistance > 0.8 || type == DamageType.TRUE)
+            throw new IllegalArgumentException("Resistance must be -1..0.8 and not TRUE");
+        resistances.put(Objects.requireNonNull(type), resistance);
     }
-
-    // Basic attack roll every Character can do — subclasses can call this
-    // or define their own special moves on top of it.
-    public int rollDamage(Random gen, int min, int max) {
-        return gen.nextInt(max - min + 1) + min + attackPower;
+    public void heal(int amount) { if (amount < 0) throw new IllegalArgumentException("Negative healing"); health=(int)Math.min(maxHealth,(long)health+amount); }
+    public boolean isDead() { return health == 0; }
+    public int rollDamage(Random random, int min, int max) { return random.nextInt(max-min+1)+min+attackPower; }
+    public void applyStatus(StatusEffect effect) { statuses.put(effect.id(), new ActiveStatus(effect)); }
+    public boolean hasStatus(StatusEffect.Kind kind) { return statuses.values().stream().anyMatch(s -> s.effect.kind()==kind); }
+    /** Tick once at the end of the affected actor's turn. Reapplication refreshes; never stacks. */
+    public void endTurn() {
+        for (var it=statuses.values().iterator(); it.hasNext();) {
+            ActiveStatus s=it.next();
+            if (!isDead()) switch(s.effect.kind()) {
+                case DAMAGE_OVER_TIME -> receiveDamage(s.effect.potency(), DamageType.TRUE);
+                case REGENERATION -> heal(s.effect.potency());
+                default -> { }
+            }
+            if (--s.remaining == 0) it.remove();
+        }
     }
-
-    // ---- getters (health/name are protected, but outside classes
-    //      like Main still need a safe way to read them) ----
-
-    public String getName() { return name; }
-    public int getHealth() { return health; }
-    public int getMaxHealth() { return maxHealth; }
-    public int getAttackPower() { return attackPower; }
-    public int getDefence() { return defence; }
+    public void clearStatuses() { statuses.clear(); }
+    public Map<String,Integer> getStatuses() {
+        Map<String,Integer> result=new LinkedHashMap<>(); statuses.forEach((id,s)->result.put(id,s.remaining)); return Map.copyOf(result);
+    }
+    public String getName(){return name;} public int getHealth(){return health;}
+    public int getMaxHealth(){return maxHealth;} public int getAttackPower(){return attackPower;}
+    public int getDefence(){return defence;}
 }

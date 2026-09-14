@@ -24,7 +24,7 @@ public class Main {
         Random gen = new Random();
 
         System.out.println(
-                "Welcome to Andrew's adventure game v3 (OOP edition)"
+                "Welcome to Andrew's adventure game V4 (foundation edition)"
         );
 
         System.out.println();
@@ -92,7 +92,7 @@ public class Main {
             );
 
             System.out.println(
-                    "Tip: try 'Train' first to earn a level or two before your first fight — it's completely safe."
+                    "You start with 3 potions. Training is optional; the Woods are a good first adventure."
             );
         }
 
@@ -188,7 +188,7 @@ public class Main {
 
         boolean playing = true;
 
-        while (playing && !player.isDead()) {
+        while (playing && !player.isDead() && input.hasNextLine()) {
 
             System.out.println();
 
@@ -263,7 +263,7 @@ public class Main {
 
             else if (choice.equalsIgnoreCase("heal")) {
 
-                player.usePotion();
+                System.out.println(player.usePotion() ? "Potion used. HP: " + player.getHealth() : "No potion needed or available.");
             }
 
 
@@ -418,24 +418,9 @@ public class Main {
             String classChoice,
             String name) {
 
-        if (classChoice.equalsIgnoreCase("Warrior")) {
-
-            return new Warrior(name);
-
-        } else if (classChoice.equalsIgnoreCase("Mage")) {
-
-            return new Mage(name);
-
-        } else if (classChoice.equalsIgnoreCase("Cleric")) {
-
-            return new Cleric(name);
-
-        } else if (classChoice.equalsIgnoreCase("Rogue")) {
-
-            return new Rogue(name);
-
-        } else {
-
+        try {
+            return PlayerClass.valueOf(classChoice.trim().toUpperCase(java.util.Locale.ROOT)).create(name);
+        } catch (IllegalArgumentException e) {
             return null;
         }
     }
