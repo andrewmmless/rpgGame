@@ -8,30 +8,55 @@ import java.util.Random;
 // no copy-pasted fight loop — that's the whole payoff of
 // converting this game to OOP.
 //
-// Enemies are now grouped by Area. Each area has 5 regular
-// mobs plus one tougher "mini-boss" mob that shows up rarely
-// (a 1-in-6 roll) and pays out much better rewards. Stats
-// climb steeply from one area to the next so the player
-// actually needs to level up before pushing into a new zone.
+// Enemies are grouped by Area. Each area has 5 regular mobs
+// (ordered roughly easiest -> hardest) plus one tough
+// "mini-boss" mob with much better rewards.
+//
+// LEVEL GATING: randomEnemy() now takes the player's level and
+// only rolls from the mobs the player has actually leveled
+// into. Walking into an area right at its minimum level only
+// throws the easiest 3 mobs at you; the mini-boss is locked
+// out entirely until you're a couple levels deeper in. This is
+// what stops a fresh level 1 character from opening a zone by
+// running into something built for a level 4 player.
 // ==========================================================
+
+
+//enum + class hierarchy
 
 public class EnemyFactory {
 
-    public static Enemy randomEnemy(Random gen, Area area) {
+    public static Enemy randomEnemy(Random gen, Area area, int playerLevel) {
         switch (area) {
-            case WHISPERING_WOODS: return whisperingWoods(gen);
-            case STONEFANG_CAVES:  return stonefangCaves(gen);
-            case FORGOTTEN_RUINS:  return forgottenRuins(gen);
-            case DRAGONS_SPIRE:    return dragonsSpire(gen);
-            default:               return whisperingWoods(gen);
+            case WHISPERING_WOODS: return whisperingWoods(gen, playerLevel);
+            case STONEFANG_CAVES:  return stonefangCaves(gen, playerLevel);
+            case FORGOTTEN_RUINS:  return forgottenRuins(gen, playerLevel);
+            case DRAGONS_SPIRE:    return dragonsSpire(gen, playerLevel);
+            default:               return whisperingWoods(gen, playerLevel);
         }
+    }
+
+    // How many of the 6 mob slots (1-5 regular, 6 mini-boss) are
+    // unlocked based on how far the player has leveled INTO this
+    // area. Same curve reused by every area below.
+    //   at or under the area's minimum level -> easiest 3 mobs only
+    //   1 level in                            -> easiest 4 mobs
+    //   2 levels in                           -> all 5 regular mobs
+    //   3+ levels in                          -> mini-boss unlocked
+    private static int mobsUnlocked(Area area, int playerLevel) {
+        int levelIntoArea = playerLevel - area.getMinLevel();
+
+        if (levelIntoArea <= 0) return 3;
+        if (levelIntoArea == 1) return 4;
+        if (levelIntoArea == 2) return 5;
+        return 6;
     }
 
     // ----------------------------------------------------------
     // AREA 1 — Whispering Woods (levels 1-4)
     // ----------------------------------------------------------
-    private static Enemy whisperingWoods(Random gen) {
-        int roll = gen.nextInt(6) + 1;
+    private static Enemy whisperingWoods(Random gen, int playerLevel) {
+        int roll = gen.nextInt(mobsUnlocked(Area.WHISPERING_WOODS, playerLevel)) + 1;
         switch (roll) {
             case 1: return new Enemy("Rat",          1,  6,  3, 1, 1, 2,  4,  6);
             case 2: return new Enemy("Goblin",       1, 10,  4, 2, 2, 4,  6,  9);
@@ -46,8 +71,8 @@ public class EnemyFactory {
     // ----------------------------------------------------------
     // AREA 2 — Stonefang Caves (levels 5-9)
     // ----------------------------------------------------------
-    private static Enemy stonefangCaves(Random gen) {
-        int roll = gen.nextInt(6) + 1;
+    private static Enemy stonefangCaves(Random gen, int playerLevel) {
+        int roll = gen.nextInt(mobsUnlocked(Area.STONEFANG_CAVES, playerLevel)) + 1;
         switch (roll) {
             case 1: return new Enemy("Cave Spider",   5, 20,  7,  3,  5,  8, 14, 18);
             case 2: return new Enemy("Skeleton",      6, 26,  8,  5,  6, 10, 16, 20);
@@ -62,8 +87,8 @@ public class EnemyFactory {
     // ----------------------------------------------------------
     // AREA 3 — Forgotten Ruins (levels 10-15)
     // ----------------------------------------------------------
-    private static Enemy forgottenRuins(Random gen) {
-        int roll = gen.nextInt(6) + 1;
+    private static Enemy forgottenRuins(Random gen, int playerLevel) {
+        int roll = gen.nextInt(mobsUnlocked(Area.FORGOTTEN_RUINS, playerLevel)) + 1;
         switch (roll) {
             case 1: return new Enemy("Skeleton Knight", 10,  55, 14,  9, 15, 22, 35, 42);
             case 2: return new Enemy("Wraith",           11,  48, 17,  6, 16, 24, 38, 45);
@@ -78,8 +103,8 @@ public class EnemyFactory {
     // ----------------------------------------------------------
     // AREA 4 — Dragon's Spire (levels 16-25)
     // ----------------------------------------------------------
-    private static Enemy dragonsSpire(Random gen) {
-        int roll = gen.nextInt(6) + 1;
+    private static Enemy dragonsSpire(Random gen, int playerLevel) {
+        int roll = gen.nextInt(mobsUnlocked(Area.DRAGONS_SPIRE, playerLevel)) + 1;
         switch (roll) {
             case 1: return new Enemy("Wyvern",           16, 120, 22, 12,  35,  45, 100, 120);
             case 2: return new Enemy("Frost Elemental",  17, 140, 20, 16,  38,  48, 105, 125);

@@ -90,6 +90,10 @@ public class Main {
                     "Welcome, " + player.getName()
                             + " the " + classChoice + "!"
             );
+
+            System.out.println(
+                    "Tip: try 'Train' first to earn a level or two before your first fight — it's completely safe."
+            );
         }
 
 
@@ -203,7 +207,7 @@ public class Main {
             );
 
             System.out.println(
-                    "(Fight, Shop, Heal, Coke, Save, Quit)"
+                    "(Fight, Train, Shop, Heal, Coke, Save, Quit)"
             );
 
             String choice = input.nextLine();
@@ -218,7 +222,7 @@ public class Main {
                 Area area = chooseArea(input, player.getLevel());
 
                 if (area != null) {
-                    Enemy enemy = EnemyFactory.randomEnemy(gen, area);
+                    Enemy enemy = EnemyFactory.randomEnemy(gen, area, player.getLevel());
 
                     Fight.start(
                             input,
@@ -227,6 +231,19 @@ public class Main {
                             enemy
                     );
                 }
+            }
+
+
+            // ======================================================
+            // TRAIN
+            // ======================================================
+            // A risk-free way to earn XP — no combat, no health lost.
+            // Great for getting a level or two before your first fight.
+            // ======================================================
+
+            else if (choice.equalsIgnoreCase("train")) {
+
+                TrainingGrounds.train(input, gen, player);
             }
 
 
