@@ -1,44 +1,52 @@
-# Andrew's RPG — V4 foundation
+# Hearthglen — Andrew's RPG
 
-Requires JDK 17 or newer. No external dependencies.
+A playable Java browser RPG, built on the V4 foundation. Four classes, four regions, five-stop expeditions, boss encounters, equipment, quests, accounts, and database-backed autosaves.
+
+## Play locally
+
+Requires Java 17+ (Java 21 recommended). Open `pom.xml` in IntelliJ as a Maven project, or double-click `start-web.command` on macOS. The first build downloads dependencies. Visit http://localhost:18080 and create an account.
+
+To rebuild after editing:
 
 ```
+./mvnw package
+java -jar target/rpg-game-4.1.0.jar --server.port=18080
+```
+
+New players can import an existing console `.txt` save during character creation. Original save files remain unchanged. Run `Main` for the original console game; it shares the player and combat foundation, but the new campaign is played in the browser.
+
+## What is playable
+
+- Warrior, Mage, Cleric, Rogue: four abilities each, unlocking at levels 1, 2, 5, and 8.
+- Hearthglen town: free rest, potion shop, introductory training.
+- Whispering Woods, Stonefang Caves, Forgotten Ruins, Dragon's Spire: three encounters, a spring/cache choice, and an area boss per expedition.
+- Later regions require the previous boss clear and a minimum level. Repeat trails to gain levels.
+- Bosses telegraph heavy attacks. Later enemies can guard, poison, drain health, or charge heavy attacks. The opening Woods are intentionally forgiving.
+- Equipment drops with three rarities, two slots, selling, and five upgrades per item. Bosses guarantee rare/epic equipment.
+- Five reward quests, four milestones, and an Endless Tower after defeating Victoria.
+- Defeat loses 10% of coins and ends the expedition; recovery keeps character and equipment.
+- Accounts, sign-in/out, autosave after each accepted action, mid-combat resume, console-save import, downloadable JSON backup.
+
+This is a first playable campaign, not a finished commercial release. There is no multiplayer, email/password recovery, multiple character slots, branching dialogue, or complex crafting. Expeditions use a fixed five-stop structure with randomized opponents and loot. Artwork is stylized and shared between regions; individual enemy illustrations remain future polish.
+
+## Architecture and saves
+
+Core Java files stay in `src/`; no Spring imports in the game rules. `GameSession` controls the campaign, `CombatEngine` controls one encounter, and `GameSave` is a versioned data-only snapshot. `src/web/` holds the Spring Boot adapter with explicitly imported components, preserving the original default-package console layout. A future package migration should update all classes together.
+
+The browser sends actions, never authoritative health, damage, or rewards. PostgreSQL/H2 store account hashes and game JSON in the private `hearthglen` schema. Passwords use BCrypt, mutations require CSRF tokens, account identity comes from the authenticated session, and optimistic version checks reject stale tabs. Accepted commands and their snapshots commit together. Re-sign-in after a server restart is expected; the saved game resumes unchanged.
+
+Local saves are in ignored `data/`. Back up that directory only while the local server is stopped. Production uses external PostgreSQL. Save schema version is 1; future changes need a migration before increasing it. Downloaded JSON backups currently require an administrator-assisted restore; the in-game import accepts console .txt saves only. Console files remain in their original locations and are not uploaded until the player chooses a file.
+
+## Verification
+
+```
+./mvnw verify
 sh test.sh
-java -cp build/classes Main
+python3 tests/web_smoke.py
 ```
 
-Open this directory as the IntelliJ project. Source remains in `src/` so the existing project layout works.
+Campaign tests cover a full four-region progression with serialization between actions, mode/area gates, equipment scaling, boss telegraphs, all ability unlocks, and 400 starter expeditions. The original 84 checks include 4,000 normal-fight balance simulations. HTTP tests start an isolated local server and check authentication, CSRF, separate accounts, stale versions, imports, and saves surviving a server restart. They require Python 3 and permission to bind a local port.
 
-## Scope
+## Deploy
 
-Preserves Warrior, Mage, Cleric, Rogue, the four original areas, all 24 enemies (including Victoria), shops, training, sword upgrades, potions, and the Coke event. No new loot, quest, dungeon, or endgame systems are included. The original permadeath console flow remains.
-
-`Player` is abstract. `PlayerClass` supplies creation and base profiles; each subclass supplies immutable reusable `Ability` definitions. Abilities carry IDs, costs, unlock levels, cooldowns, and composable behavior. KO Slash is reliable burst damage, Fireball burns, Backstab bleeds, and Prayer heals. All classes currently use a shared regenerating resource pool; distinct rage/mana/energy economies are deliberately deferred.
-
-`CombatEngine` owns one encounter, accepts `CombatAction` plus an optional ability ID, and returns an immutable `CombatResult` with outcome, messages, and health values. It has no console, filesystem, Spring, or class-specific checks. `Fight` is the console adapter. A future web controller can call the same engine; serialize requests per encounter. Messages are currently English strings; structured localized event payloads are a future extension.
-
-Invalid abilities, cooldown attempts, insufficient resource, and unusable potions consume no turn. Cooldowns count subsequent accepted actions. Victory rewards occur exactly once; dead enemies never retaliate after a direct killing blow. A defeat takes precedence if both combatants die in a round. A successful escape gives no rewards.
-
-Status definitions are immutable. Each character owns remaining durations, ticks them at the end of its own turn, and refreshes matching IDs rather than stacking. Damage-over-time, regeneration, stun, and guard are supported. Guard halves incoming damage through the next enemy attack; encounter completion clears temporary effects. Reuse the same engine throughout an encounter; constructing a new one resets temporary encounter state.
-
-## Balance
-
-- Level-one HP: Warrior 100, Mage 80, Cleric 95, Rogue 85; +10 each level.
-- Attack: 12–15 by class, +3 each level. Armour: 5–12, +2 each level.
-- Damage mitigation: `raw * 50 / (50 + armour)`, rounded; zero damage stays zero.
-- Typed resistances support weaknesses down to -100% and resistance up to 80%. TRUE bypasses armour and typed resistance.
-- Normal enemy HP: `28 + 6*(level-1)`; attack: `9 + 2*(level-1)`; armour: `4 + level`.
-- Existing bosses use 1.6x HP, 1.2x attack, and 2x XP. Their mechanics remain simple.
-- XP to next level: `30 + 12*(level-1)`; same-level normal reward: `10 + 4*(level-1)`. Three normal wins per level; excess XP carries over. Level cap 100.
-- Level-ups restore HP and resource. Three starting potions; each restores 40% maximum HP.
-- Tests simulate 4,000 basic-attack-only, same-level normal fights across all classes at levels 1, 5, 10, 16, and 25. Average HP cost is approximately 14–26%, with no deaths. This is a foundation tuning check, not proof of complete campaign or boss balance. Choosing higher-level areas remains dangerous.
-
-## Saves and compatibility
-
-V4 writes atomically to `saves-v4/`. Loading falls back to reading an original `saves/` file, translates fractional HP/XP progress, and derives stats from the new class/level formulas. Original saves are never overwritten or deleted. V4 persists resource, coins, potions, and sword bonus. Saving during combat is not exposed by the console. The full persistence rewrite is outside this phase.
-
-The old direct special-move methods are replaced by abilities. Player stat setters were removed so class and level determine stats consistently.
-
-## Working copy
-
-This rewrite was prepared on a separate local `rework` branch from commit `0a141d0`, using all 15 current source files from the original repository, including Area and TrainingGrounds which initially were untracked. Synced reference files and main were left untouched. No commits or pushes are performed automatically.
+See [DEPLOYMENT.md](DEPLOYMENT.md). The Dockerfile and Render blueprint are included; production account/database setup is still required. No public deployment or paid service has been created.

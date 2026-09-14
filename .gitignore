@@ -1,0 +1,10 @@
+.DS_Store
+out/
+build/
+target/
+data/
+saves/
+saves-v4/
+*.class
+.env
+.idea/workspace.xml

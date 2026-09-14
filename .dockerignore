@@ -1,0 +1,8 @@
+.git
+.idea
+build
+target
+data
+saves
+saves-v4
+.env

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640">
+<defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#aac5b2"/><stop offset="1" stop-color="#e3d6a6"/></linearGradient><linearGradient id="mist" x2="0" y2="1"><stop stop-color="#98b7a0"/><stop offset="1" stop-color="#4b7864"/></linearGradient><linearGradient id="ground" x2="0" y2="1"><stop stop-color="#2f5e4b"/><stop offset="1" stop-color="#163b2e"/></linearGradient><g id="pine"><path d="M0 0-27 58h13l-28 44h21l-26 45H47l-26-45h21L14 58h13Z"/><path d="M-5 140h10v32H-5Z"/></g></defs>
+<rect width="1200" height="640" fill="url(#sky)"/><circle cx="837" cy="143" r="69" fill="#f2e4ae" opacity=".8"/>
+<path d="m0 310 175-115 128 83 196-185 200 201L857 181l159 94 184-135v360H0Z" fill="#739c87" opacity=".55"/>
+<path d="m0 350 121-77 180 130 130-139 176 119 219-130 124 114 250-138v300H0Z" fill="url(#mist)"/>
+<g fill="#507e66" opacity=".8"><use href="#pine" transform="translate(83 211) scale(1.1)"/><use href="#pine" transform="translate(159 245)"/><use href="#pine" transform="translate(929 211)"/><use href="#pine" transform="translate(1025 195) scale(1.3)"/><use href="#pine" transform="translate(411 267) scale(.8)"/></g>
+<path d="M0 426q196-141 403-24t401-26 396 38v226H0Z" fill="url(#ground)"/>
+<path d="M601 640H416q-17-67 71-124t158-65q40-11 39-43 12 48-36 66t-83 65q-32 44 36 101Z" fill="#c6ba8b"/>
+<path d="m449 640 121-121-40 45-8 76" fill="#daca9e" opacity=".7"/>
+<g fill="#254d3b"><use href="#pine" transform="translate(274 247) scale(1.6)"/><use href="#pine" transform="translate(879 268) scale(1.4)"/><use href="#pine" transform="translate(755 315) scale(.7)"/><use href="#pine" transform="translate(702 285) scale(.8)"/></g>
+<g fill="#11372c"><use href="#pine" transform="translate(35 38) scale(3.1)"/><use href="#pine" transform="translate(154 110) scale(2.7)"/><use href="#pine" transform="translate(1125 17) scale(3.5)"/><use href="#pine" transform="translate(1006 165) scale(2.6)"/></g>
+<path d="M0 566q140-58 266 22t105 52H0Zm764 74q78-107 221-88t215-22v110Z" fill="#102f26"/>
+<g fill="#d1c184" opacity=".8"><circle cx="316" cy="496" r="3"/><circle cx="939" cy="484" r="2"/><circle cx="695" cy="492" r="3"/><circle cx="737" cy="560" r="2"/></g>
+<g fill="#15392e"><path d="m813 171 9-3 9 3-9 2Zm-51 33 8-3 8 3-8 2Z"/></g>
+</svg>

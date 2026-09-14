@@ -2,6 +2,7 @@ import java.util.*;
 
 public abstract class Player extends Character {
     private final PlayerClass playerClass;
+    private int weaponBonus, armourBonus;
     private int level=1, xp, coins, potions=3, swordDamage, resource=40;
     protected Player(String name, PlayerClass type) {
         super(name,type.health,type.attack,type.armour); playerClass=type;
@@ -36,5 +37,11 @@ public abstract class Player extends Character {
     public int getSwordDamage(){return swordDamage;} public void setSwordDamage(int value){if(value<0)throw new IllegalArgumentException(); swordDamage=value;}
     public void upgradeSword(int amount){if(amount<0)throw new IllegalArgumentException();swordDamage=Math.addExact(swordDamage,amount);}
     public void setHealth(int value){health=Math.max(0,Math.min(maxHealth,value));}
-    @Override public int rollDamage(Random random,int min,int max){return super.rollDamage(random,min,max)+swordDamage;}
+    public void equipBonuses(int weapon, int armour) {
+        if (weapon < 0 || armour < 0) throw new IllegalArgumentException("Invalid equipment");
+        weaponBonus = weapon; armourBonus = armour;
+    }
+    @Override public int getAttackPower() { return super.getAttackPower() + weaponBonus + swordDamage; }
+    @Override public int getDefence() { return super.getDefence() + armourBonus; }
+    @Override public int rollDamage(Random random,int min,int max){return super.rollDamage(random,min,max)+swordDamage+weaponBonus;}
 }

@@ -17,7 +17,7 @@ public abstract class Character {
     public void takeDamage(int amount) { receiveDamage(amount, DamageType.PHYSICAL); }
     public int receiveDamage(int amount, DamageType type) {
         Objects.requireNonNull(type);
-        int damage=Balance.damage(amount, defence, type);
+        int damage=Balance.damage(amount, getDefence(), type);
         if (type != DamageType.TRUE) damage=(int)Math.round(damage * (1-resistances.getOrDefault(type, 0.0)));
         if (hasStatus(StatusEffect.Kind.GUARD)) damage=(int)Math.ceil(damage * 0.5);
         int dealt=Math.min(health, damage); health-=dealt; return dealt;
@@ -42,6 +42,20 @@ public abstract class Character {
                 default -> { }
             }
             if (--s.remaining == 0) it.remove();
+        }
+    }
+    public record StatusState(StatusEffect effect, int remaining) {}
+    public List<StatusState> snapshotStatuses() {
+        return statuses.values().stream().map(s -> new StatusState(s.effect, s.remaining)).toList();
+    }
+    public void restoreStatuses(List<StatusState> saved) {
+        statuses.clear();
+        for (StatusState state : saved) {
+            if (state.remaining() < 1 || state.remaining() > state.effect().duration())
+                throw new IllegalArgumentException("Invalid status duration");
+            ActiveStatus active = new ActiveStatus(state.effect());
+            active.remaining = state.remaining();
+            statuses.put(state.effect().id(), active);
         }
     }
     public void clearStatuses() { statuses.clear(); }

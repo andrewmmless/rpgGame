@@ -1,6 +1,47 @@
 /** Encounter stats and reward ranges, independent of presentation. */
 public class Enemy extends Character {
 
+    private boolean boss;
+    public Enemy asBoss() { boss = true; return this; }
+    public boolean isBoss() { return boss; }
+    public void restoreHealth(int value) { if(value < 0 || value > maxHealth) throw new IllegalArgumentException(); health=value; }
+    public enum Move { ATTACK, CHARGE, HEAVY, GUARD, POISON, DRAIN }
+    public Move move(int round) {
+        if(boss) return round%3==0?Move.CHARGE:round%3==1?Move.HEAVY:Move.ATTACK;
+        if(level<3) return Move.ATTACK;
+        return switch(name) {
+            case "Cave Spider", "Dark Cultist", "Storm Harpy" -> round%3==0?Move.POISON:Move.ATTACK;
+            case "Stone Golem", "Skeleton Knight", "Ancient Guardian" -> round%3==0?Move.GUARD:Move.ATTACK;
+            case "Wraith", "Shadow Knight" -> round%3==1?Move.DRAIN:Move.ATTACK;
+            case "Orc Grunt", "Cave Troll", "Wyvern", "Tower Shade" -> round%3==0?Move.CHARGE:round%3==1?Move.HEAVY:Move.ATTACK;
+            default -> Move.ATTACK;
+        };
+    }
+    public String intent(int round) {
+        return switch(move(round)) {
+            case ATTACK -> "Attack";
+            case CHARGE -> "Gathering strength";
+            case HEAVY -> "Heavy strike — defend!";
+            case GUARD -> "Guard — your next attack will be weakened";
+            case POISON -> "Poison strike — stun to interrupt";
+            case DRAIN -> "Life drain — damage also heals the enemy";
+        };
+    }
+    public double attackMultiplier(int round) { return move(round)==Move.HEAVY?2.0:move(round)==Move.CHARGE?0:1; }
+    public void performTurn(int round, Player target, java.util.Random random, java.util.List<String> events) {
+        Move next=move(round);
+        if(next==Move.CHARGE) {events.add(name+" gathers strength. A heavy strike is coming!");return;}
+        if(next==Move.GUARD) {
+            applyStatus(new StatusEffect("guard",StatusEffect.Kind.GUARD,0,2));
+            events.add(name+" guards. Use this opening to recover or prepare.");return;
+        }
+        int dealt=target.receiveDamage((int)Math.round(rollDamage(random,-1,1)*attackMultiplier(round)),DamageType.PHYSICAL);
+        events.add(name+" dealt "+dealt+" damage.");
+        if(next==Move.POISON && !target.isDead()) {
+            target.applyStatus(new StatusEffect("poison",StatusEffect.Kind.DAMAGE_OVER_TIME,Math.max(2,level/2),2));events.add("Poison will hurt for two turns.");
+        }
+        if(next==Move.DRAIN) {heal(dealt/2);events.add(name+" drained "+dealt/2+" health.");}
+    }
     private int level;
     private int coinRewardMin;
     private int coinRewardMax;
