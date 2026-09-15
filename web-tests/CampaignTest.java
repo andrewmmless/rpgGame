@@ -53,7 +53,7 @@ class CampaignTest {
     @Test void weaponAttributesWorkAndSurviveEquipmentSaveRoundTrips() throws Exception {
         Player p=new Mage("Attribute");p.setResource(10);p.equipAttribute(WeaponAttribute.FOCUS);
         Enemy target=new Enemy("Target",1,500,0,0,0,0,0,0);CombatEngine engine=new CombatEngine(p,target,new Random(1));
-        engine.performAction(CombatAction.DEFEND);assertEquals(18,p.getResource());
+        engine.performAction(CombatAction.DEFEND);assertEquals(24,p.getResource()); // 10 initial + 6 defend + 4 Focus + 4 round recovery.
         p.equipAttribute(WeaponAttribute.SIPHON);p.setHealth(30);int hp=p.getHealth();
         CombatResult siphon=engine.performAction(CombatAction.ABILITY,"fireball");assertTrue(siphon.events().stream().anyMatch(e->e.startsWith("Siphon restored 2")));
         assertTrue(p.getHealth()>=hp);
