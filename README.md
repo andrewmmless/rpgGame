@@ -52,3 +52,8 @@ Campaign tests cover a full four-region progression with serialization between a
 See [DEPLOYMENT.md](DEPLOYMENT.md). The Dockerfile and Render blueprint are included; production account/database setup is still required. No public deployment or paid service has been created.
 
 The current prototype adds an illustrated clickable town, a blacksmith shop, an equipment comparison interface, milestone chests with keep/sell confirmation, and functional weapon attributes. The owner can enable a separate unranked Developer Lab through `DEVELOPER_USERNAME`; see DEPLOYMENT.md. The proposed co-op, profession, subclass, housing and endgame redesign is recorded in COOP-DESIGN.md and is not implemented yet.
+
+## Two-player co-op
+Open Co-op with a normal character in town. One player creates a party and shares the 16-character code; the other joins. Characters must be within three levels. The host starts the Rootbound Gate encounter. Both players lock a move each round; attacks, class abilities, defend, protect, mend and up to three carried potions are available. A missing player can default to defend after one minute if the other has chosen. Either player can leave to end the run. Solo actions pause during a lobby or battle.
+
+This first co-op release is one shared boss encounter, not a full branching dungeon. Victory automatically saves separate XP, coins and a rare-or-epic item for each participant. Full bags convert loot to coins. Sessions and pending moves survive refresh/server restart; completion and rewards share one database transaction. Developer test characters cannot enter. `python3 tests/coop_smoke.py` runs one isolated two-account victory/reconnect/replay check. Broader balance playtesting remains necessary.

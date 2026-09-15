@@ -23,3 +23,13 @@ CREATE TABLE IF NOT EXISTS hearthglen.rpg_developer_saves (
     version BIGINT NOT NULL,
     payload TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS hearthglen.rpg_coop (
+    id VARCHAR(32) PRIMARY KEY,
+    active BOOLEAN NOT NULL,
+    payload TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS hearthglen.rpg_coop_members (
+    username VARCHAR(32) PRIMARY KEY REFERENCES hearthglen.rpg_users(username),
+    party_id VARCHAR(32) NOT NULL REFERENCES hearthglen.rpg_coop(id)
+);

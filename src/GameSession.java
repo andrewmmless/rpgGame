@@ -168,6 +168,11 @@ public final class GameSession {
         }
         claimed.add(id);player.gainXp(xp);player.addCoins(coins);say("Quest reward: +"+xp+" XP and +"+coins+" coins.");
     }
+    public void returnFromCoop(int health,int resource,int potionsUsed,int xp,int coins,Equipment reward,boolean won) {
+        inTown();player.setHealth(Math.max(1,health));player.setResource(resource);player.setPotions(Math.max(0,player.getPotions()-potionsUsed));
+        if(won){player.gainXp(xp);player.addCoins(coins);kills++;if(inventory.size()<30)inventory.add(reward);else{player.addCoins(reward.value());say("Co-op reward sold because your bag was full.");}say("Co-op dungeon cleared: +"+xp+" XP, +"+coins+" coins and "+reward.name()+".");}
+        else say("Returned from the co-op dungeon. Rest before another expedition.");
+    }
     public GameSave snapshot() {
         GameSave.PlayerData pd=new GameSave.PlayerData(player.getName(),player.getPlayerClass(),player.getLevel(),player.getXp(),player.getHealth(),player.getResource(),player.getCoins(),player.getPotions(),player.getSwordDamage());
         GameSave.BattleData battle=mode==Mode.COMBAT?new GameSave.BattleData(enemy.getName(),enemy.getLevel(),enemy.getMaxHealth(),enemy.getHealth(),enemy.getAttackPower(),enemy.getDefence(),enemy.isBoss(),combat.getRound(),combat.snapshotCooldowns(),player.snapshotStatuses(),enemy.snapshotStatuses()):null;

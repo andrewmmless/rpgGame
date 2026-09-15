@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Import;
 
 @SpringBootConfiguration
 @EnableAutoConfiguration
-@Import({WebSecurity.class, GameRepository.class, GameController.class, WebErrors.class, ProductionGuard.class, DeveloperLab.class})
+@Import({WebSecurity.class, GameRepository.class, GameController.class, WebErrors.class, ProductionGuard.class, DeveloperLab.class, CoopController.class})
 public class RpgApplication {
     public static void main(String[] args) { SpringApplication.run(RpgApplication.class,args); }
 }

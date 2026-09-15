@@ -70,6 +70,9 @@ public class GameRepository {
     }
     public Map<String,Object> command(String user,long expectedVersion,String action,String value) {
         return transactions.execute(status -> {
+            jdbc.queryForList("SELECT username FROM hearthglen.rpg_saves WHERE username=? FOR UPDATE",user);
+            int active=jdbc.queryForObject("SELECT COUNT(*) FROM hearthglen.rpg_coop_members m JOIN hearthglen.rpg_coop p ON p.id=m.party_id WHERE m.username=? AND p.active=TRUE",Integer.class,user);
+            if(active>0)throw new IllegalArgumentException("Leave or finish your co-op party before playing solo.");
             Row row=row(user);
             if(row==null)throw new IllegalArgumentException("Create a character first.");
             if(row.version()!=expectedVersion)throw new StaleGameException();
@@ -80,7 +83,7 @@ public class GameRepository {
             return response(game,expectedVersion+1);
         });
     }
-    private void scores(String user,GameSession game,Boolean ranked) {
+    void scores(String user,GameSession game,Boolean ranked) {
         GameSave save=game.snapshot();
         int count=jdbc.update("UPDATE hearthglen.rpg_scores SET character_name=?,player_class=?,level=?,kills=?,bosses=?,tower=? WHERE username=?",
             save.player().name(),save.player().type().name(),save.player().level(),save.kills(),save.cleared().size(),save.towerBest(),user);
