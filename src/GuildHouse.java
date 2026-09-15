@@ -1,6 +1,7 @@
 import java.util.*;
 /** Small private guild; versioned social state, separate from character saves. */
 public class GuildHouse {
+    public static final int MAX_MEMBERS=8;
     public String name,owner,emblem="leaf",invite;
     public long version;
     public int coins,materials,upgrade;

@@ -54,3 +54,6 @@ Woods: 1–15. Caves: 16–30. Ruins: 31–45. Spire: 46–60. Each route covers
 The illustrated kingdom map shows four clickable regions and only the selected region's three routes. Story dialogue and the journal archive are expandable. Each route unlocks its successor once cleared; character level alone cannot skip them.
 
 Validation: full package build and 21 tests, including all twelve routes with save restoration between actions, route-lock rejection, first-clear reward idempotency, early loot ceilings and legacy region-clear access. This is an initial balance pass; long-term pacing and mobile visual polish still need player feedback.
+
+### Shared story and world-map checkpoint
+All twelve routes now support three-stage two-player missions with escort, investigation or ward-disruption objectives and individual persistent story progression. The central capital contains services, guild hall and dungeon lodge; gathering sites have basic skill/material progression. Guilds now hold eight members while dungeon parties remain two. See WAYFARER-HANDOFF.md for full mechanics and verification. Future kingdoms, wars and local conflicts are recorded for later, not implemented now.

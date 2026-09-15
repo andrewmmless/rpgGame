@@ -184,3 +184,6 @@ See STORY-PATH.md for the canonical plot and latest implementation status. The c
 ### Presentation and navigation release
 
 See WAYFARER-HANDOFF.md for the complete current-state inventory and remaining work. Added red/ember opening artwork, Ashwing the Red Wyrm artwork and naming, browser-persistent dark mode, world-map Guild Hall and Dungeon Lodge destinations, compact current-route focus, explicit class/promotion guidance, and anchored map hover styling. Removed the Backup button. The detailed handoff distinguishes implemented systems from narrative scenes and future mission mechanics.
+
+### Shared story and world-map checkpoint
+All twelve routes now support three-stage two-player missions with escort, investigation or ward-disruption objectives and individual persistent story progression. The central capital contains services, guild hall and dungeon lodge; gathering sites have basic skill/material progression. Guilds now hold eight members while dungeon parties remain two. See WAYFARER-HANDOFF.md for full mechanics and verification. Future kingdoms, wars and local conflicts are recorded for later, not implemented now.

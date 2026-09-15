@@ -35,6 +35,7 @@ public final class GameSession {
         require(action!=null,"Choose an action.");
         if (value == null) value = "";
         switch(action) {
+            case "gather","sell_material" -> {inTown();String[] parts=value.split(":");require(parts.length==2,"Choose a gathering site.");Gathering profession=Gathering.valueOf(parts[0]);int tier=Integer.parseInt(parts[1]);say(action.equals("gather")?profession.gather(tier,player,claimed,cleared,random):profession.sell(tier,player,claimed));}
             case "story" -> {inTown();say(StoryPath.speak(value,claimed,cleared));}
             case "adventure" -> {
                 inTown();String[] choice=value.split(":",-1);Area target=Area.valueOf(choice[0]);
@@ -201,6 +202,14 @@ public final class GameSession {
         if(won){player.gainXp(xp);player.addCoins(coins);kills++;if(inventory.size()<30)inventory.add(reward);else{player.addCoins(reward.value());say("Co-op reward sold because your bag was full.");}say("Co-op dungeon cleared: +"+xp+" XP, +"+coins+" coins and "+reward.name()+".");}
         else say("Returned from the co-op dungeon. Rest before another expedition.");
     }
+    public int completeCoopStory(int index) {
+        SubArea path=SubArea.get(index);require(path.unlocked(claimed,cleared),"Story route is locked.");
+        boolean first=!path.complete(claimed,cleared);claimed.add(path.key());
+        int bonus=first?Balance.xpNeeded(path.minLevel())*2:0;
+        if(first){player.gainXp(bonus);say(path.ending());say("Shared story clear: +"+bonus+" XP.");}
+        if(index%3==2)cleared.add(path.area().name());
+        return bonus;
+    }
     public GameSave snapshot() {
         GameSave.PlayerData pd=new GameSave.PlayerData(player.getName(),player.getPlayerClass(),player.getLevel(),player.getXp(),player.getHealth(),player.getResource(),player.getCoins(),player.getPotions(),player.getSwordDamage());
         GameSave.BattleData battle=mode==Mode.COMBAT?new GameSave.BattleData(enemy.getName(),enemy.getLevel(),enemy.getMaxHealth(),enemy.getHealth(),enemy.getAttackPower(),enemy.getDefence(),enemy.isBoss(),combat.getRound(),combat.snapshotCooldowns(),player.snapshotStatuses(),enemy.snapshotStatuses()):null;
@@ -225,6 +234,7 @@ public final class GameSession {
     public Map<String,Object> view() {
         Map<String,Object> view=new LinkedHashMap<>();
         view.put("player",Map.ofEntries(Map.entry("name",player.getName()),Map.entry("type",player.getPlayerClass()),Map.entry("rank",WorldNames.rank(player.getPlayerClass(),cleared)),Map.entry("title",cleared.contains(Area.DRAGONS_SPIRE.name())?"Dragonbane":""),Map.entry("level",player.getLevel()),Map.entry("xp",player.getXp()),Map.entry("nextXp",player.getXpToNextLevel()),Map.entry("health",player.getHealth()),Map.entry("maxHealth",player.getMaxHealth()),Map.entry("resource",player.getResource()),Map.entry("maxResource",player.getMaxResource()),Map.entry("coins",player.getCoins()),Map.entry("potions",player.getPotions()),Map.entry("attack",player.getAttackPower()),Map.entry("defence",player.getDefence()),Map.entry("statuses",player.getStatuses())));
+        view.put("gathering",Arrays.stream(Gathering.values()).map(g->g.view(claimed,cleared)).toList());
         view.put("story",StoryPath.view(claimed,cleared));
         view.put("routes",SubArea.ALL.stream().map(r->Map.of("index",r.index(),"area",r.area(),"name",r.name(),"minLevel",r.minLevel(),"maxLevel",r.maxLevel(),"mission",r.mission(),"unlocked",r.unlocked(claimed,cleared),"complete",r.complete(claimed,cleared))).toList());
         if(route()!=null)view.put("route",Map.of("name",route().name(),"mission",route().mission(),"opening",route().opening(),"ending",route().ending(),"guardian",route().guardian()));

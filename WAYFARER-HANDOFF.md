@@ -46,11 +46,11 @@ This is the source-code handoff, not confirmation of a successful live Render de
 ## Completed: co-op and social systems
 - One two-player Rootbound Gate dungeon, coordinated turns, six-character invite codes, a pending-turn indicator, partner protection/healing, downed-partner rescue, and individual reward summaries.
 - Normal solo actions are locked while a party is active. Characters cannot switch slots while still in a party.
-- Private two-member guilds, a shared coin wallet, three house upgrades, furnishings, a guestbook and shared adventure memories.
+- Private eight-member guilds, a shared coin wallet, three house upgrades, furnishings, a guestbook and shared adventure memories.
 - Bond milestones: title after one credited clear, Rally after three, twin lantern decoration after five. Credit requires a meaningful encounter and has a five-minute limit; normal rewards still apply to victories.
-- Guild Hall and Dungeon Lodge are now buildings on the kingdom map instead of permanent navigation tabs.
+- Guild Hall and Dungeon Lodge are inside the central capital, reached from the kingdom map.
 - Dungeon Lodge presents the existing Rootbound Gate run as a two-player contract, with preparation and rewards expandable. Additional dungeon contracts are not built yet.
-- Shared chapter progression is not implemented; the twelve-route campaign is currently solo.
+- All twelve routes now support shared two-player story missions; both characters must have the route unlocked and be within three levels.
 
 ## Completed: presentation in this pass
 - New illustrated opening screen: crown-service framing, fortress landscape and red/ember palette.
@@ -80,7 +80,7 @@ This is the source-code handoff, not confirmation of a successful live Render de
 4. **Long-term gear goals:** legendary items, distinctive boss rewards, crafting/pity progress, more build-defining attributes. Avoid repetitive ten-second farming loops.
 5. **Story depth:** interactive conversations/choices, playable rival contests, promotion ceremonies, branching consequences and richer NPC reactions. Keep story quests with NPCs; noticeboards should only hold optional small tasks.
 6. **Death/economy refinements:** story-tier-scaled XP and unequipped-material risk; never lose levels or equipped gear; penalize only the fallen co-op player; exempt rival contests. Review income, item values and difficulty using real play feedback.
-7. **Gathering/crafting:** the Blighted Hollow for foraging, the Hollow Vein for mining and the Drowned Archive for fishing. These are planned names, not functioning professions. Add skills, resources and recipes.
+7. **Gathering/crafting:** the Blighted Hollow for foraging, the Hollow Vein for mining and the Drowned Archive for fishing. Basic gathering, skill XP, material storage and bundle selling now work. Crafting recipes and deeper profession interactions remain.
 8. **Optional later features:** friendly duels, additional settlements, shared housing depth, class combos, world events, cosmetics/emotes and personal surprises.
 9. **Endgame after the campaign feels good:** Nightmare/New Game+, another raid boss, rotating challenge dungeon. Tower expansion is not the priority. Casino remains deferred.
 10. **Remaining usability:** per-fight basic auto-attack that stops for danger; character deletion with safeguards; mobile/accessibility visual review; deployment confirmation after each release.
@@ -92,3 +92,21 @@ Detailed plot and future scene design: STORY-PATH.md. Original requirements and 
 
 ### Cinder palette follow-up
 The interface now uses crimson/ember buttons, health and resource bars, selected navigation, class selection, promotion highlights and warm ash surfaces in both themes. The app icon is a flame. Map hover anchoring is retained. Natural terrain and equipment rarity colors remain distinguishable.
+
+## Shared story, capital and professions release
+
+- Central Cindergard citadel opens the Crown District. Guild Hall, Dungeon Lodge, inn, forge and apothecary are inside. Combat regions surround the capital; foraging woods, mining grounds and a fishing island are separate map destinations. This supersedes the earlier map layout.
+- Twelve shared story contracts. Each has three combat stages, regroup recovery, route-specific narrative and one of three objectives: escort supplies, recover evidence or disrupt wards. Objectives consume a player's turn, creating support/attack decisions. A guardian kill alone cannot finish a stage.
+- Escort actions restore supply integrity; neglect can fail the mission. Investigation actions expose the searching player to extra damage, encouraging partner protection. Ward disruption reduces incoming enemy damage that round.
+- Story route must be open to both accounts; a further-progressed character can help on an earlier route. The existing three-level party range remains. Each character receives its own saved route clear and first-clear XP only once. Final routes grant regional clears/promotions. Repeats give ordinary run rewards, never duplicate story bonuses. Leaving/failure gives no story clear.
+- Pending choices, stages, objective progress and supply integrity survive restart in the existing co-op save payload. Rescue, Rally, guild supplies and pair-based bonds remain supported. The old Warden dungeon remains available.
+- Guild capacity is eight accounts. Each member can select a guildmate to view that pair's bond; Rally eligibility is still determined by the actual two-person party. Invites rotate after joins. The founder still cannot leave until other members leave; ownership transfer/moderation are not implemented.
+- Foraging, mining and fishing: three sites each, ten profession levels, 25 XP per gathering trip, 8 resource cost, per-character materials and five-item sale bundles. Better sites require both skill level and story access. Resource recovery remains at the inn. No crafting yet.
+- Removed grey navigation-tab backgrounds in both themes. Existing map-hover fixes remain.
+- Verification: full package build and 28 Java tests; isolated two-player shared-story run with reconnect/restart and duplicate reward denial; isolated eight-member guild test with ninth-member rejection. Map SVG and frontend syntax checked. No long-term economy study or full device visual audit.
+
+### Later world expansion (requested, deliberately not built now)
+Branch into other kingdoms with their own goals, wars, monster threats and local crises. Cindergard should first feel complete and enjoyable. Future kingdom access should follow authored story milestones, preserve existing characters/professions/guilds and offer new reasons to cooperate. No war system or second kingdom is included in this release.
+
+### Remaining priority
+Solo mission-objective parity, richer investigation/escort interactions, class builds and promotion mechanics, legendary/crafting goals, profession-specific minigames, more visual variety and targeted balance from player feedback. Larger-party raids, guild ownership transfer and rival duels remain unbuilt.
