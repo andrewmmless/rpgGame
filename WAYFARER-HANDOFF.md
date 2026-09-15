@@ -119,3 +119,10 @@ Solo mission-objective parity, richer investigation/escort interactions, class b
 - Co-op applies that penalty only to characters still fallen when the run ends. A successfully rescued character does not receive it. A living character who loses the convoy does not receive a death penalty. Failed missions still award no story clear.
 - Full build and 32 tests passed, including objective turn cost/persistence, convoy failure without progression, atomic crafting, no free repeat crafting and individual co-op death losses. No repeated long-duration simulations were run.
 - Remaining: richer investigation choices, more crafting recipes, subclass/attribute/loadout choices, legendary goals, varied enemy art, guild leadership tools and long-term economy tuning. Future kingdoms remain deferred.
+
+## Small combat and guild polish release
+- Solo enemy warnings now include practical response advice. Turn summaries show net enemy health, player health and resource changes.
+- Frost Elementals periodically siphon eight resource; guard blocks it. Dark Cultists periodically heal instead of attacking; stun interrupts that recovery. Shared-story enemy patterns remain their existing co-op implementation.
+- Leaders can transfer ownership to a current guildmate through a confirmed form. Server checks ownership and membership; the invite rotates on transfer. The former leader can then leave.
+- Fixed a brittle deployment test that compared JSON set ordering; it now compares complete saved-state values instead.
+- Full build and 35 tests passed. Attribute allocation, ability leveling, loadouts, subclass mechanics and legendary rewards remain next larger systems.

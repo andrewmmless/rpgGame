@@ -16,6 +16,11 @@ public class GuildHouse {
         new Decoration("books","Adventurers' bookshelf","shelf",40,""),new Decoration("flowers","Window flowers","garden",25,""),
         new Decoration("banner","Guild banner","wall",35,""),new Decoration("warden_trophy","Warden antlers","wall",0,"warden"),
         new Decoration("bond_lantern","Twin lanterns","hearth",0,"bond"));
+    public void transfer(String actor,String nextOwner,List<String> members){
+        CoopDungeon.require(Objects.equals(actor,owner),"Only the guild leader can transfer leadership.");
+        CoopDungeon.require(!actor.equals(nextOwner)&&members.contains(nextOwner),"Choose another current guild member.");
+        owner=nextOwner;record(actor+" transferred guild leadership to "+nextOwner+".");
+    }
     public void record(String text){history.add(text);while(history.size()>40)history.remove(0);}
     public static Decoration decoration(String id){return CATALOG.stream().filter(d->d.id().equals(id)).findFirst().orElseThrow(()->new IllegalArgumentException("Unknown decoration."));}
 }

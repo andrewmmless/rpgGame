@@ -22,7 +22,7 @@ class CampaignTest {
                 }
                 String saved=json.writeValueAsString(game.snapshot());
                 game=GameSession.restore(json.readValue(saved,GameSave.class),new Random(limit));
-                assertEquals(saved,json.writeValueAsString(game.snapshot()),"Round-trip should preserve all persisted state");
+                assertEquals(json.readValue(saved,GameSave.class),game.snapshot(),"Round-trip should preserve all persisted state; set ordering is not significant");
             }
             assertTrue(limit<100);assertTrue(game.snapshot().claimed().contains(route.key()));
             if(route.index()%3==2){assertTrue(game.snapshot().cleared().contains(area.name()));
