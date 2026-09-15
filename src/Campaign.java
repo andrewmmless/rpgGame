@@ -4,10 +4,10 @@ import java.util.*;
 public final class Campaign {
     public record Region(Area area, String subtitle, String story, String boss, String quest, String[] enemies) {}
     public static final List<Region> REGIONS = List.of(
-        new Region(Area.WHISPERING_WOODS,"Where the road begins","The old trail has fallen silent. Track the pack to its den and reopen the road to Stonefang.","Alpha Wolf","Silence in the Woods",new String[]{"Rat","Goblin","Wild Boar","Bandit Scout","Forest Wolf"}),
-        new Region(Area.STONEFANG_CAVES,"Beneath the mountain","The miners fled when the drums began. Follow the abandoned lamps and confront the Orc Chieftain.","Orc Chieftain","The Drums Below",new String[]{"Cave Spider","Skeleton","Bandit","Orc Grunt","Cave Troll"}),
-        new Region(Area.FORGOTTEN_RUINS,"A kingdom remembered","A cold light burns in the ruined chapel. Break the acolyte's ritual before the dead reach town.","Lich Acolyte","The Last Bell",new String[]{"Skeleton Knight","Wraith","Stone Golem","Dark Cultist","Gargoyle"}),
-        new Region(Area.DRAGONS_SPIRE,"Beyond the storm","Victoria holds the summit. Climb the broken stair, survive her breath, and bring the long night to an end.","Victoria the Dragon","At the End of the Sky",new String[]{"Wyvern","Frost Elemental","Shadow Knight","Storm Harpy","Ancient Guardian"}));
+        new Region(Area.WHISPERING_WOODS,"Where the road begins","Corruption has driven the woodland packs onto Cindergard’s eastern road. Track the Alpha Wolf to its den to reopen the passage from Hearthglen to Stonefang.","Alpha Wolf","Silence in the Woods",new String[]{"Rat","Goblin","Wild Boar","Bandit Scout","Forest Wolf"}),
+        new Region(Area.STONEFANG_CAVES,"Beneath the mountain","Beyond the woods, Stonefang’s mountain tunnels lead toward the old royal ruins. The miners fled when the drums began. Defeat the Orc Chieftain to secure the passage.","Orc Chieftain","The Drums Below",new String[]{"Cave Spider","Skeleton","Bandit","Orc Grunt","Cave Troll"}),
+        new Region(Area.FORGOTTEN_RUINS,"A kingdom remembered","The tunnels emerge beneath Cindergard’s forgotten royal quarter. A cold light burns in its chapel. Break the Lich Acolyte’s ritual to reach the road climbing Dragon’s Spire.","Lich Acolyte","The Last Bell",new String[]{"Skeleton Knight","Wraith","Stone Golem","Dark Cultist","Gargoyle"}),
+        new Region(Area.DRAGONS_SPIRE,"Beyond the storm","The corruption leads to Victoria at the summit, where Cindergard’s old pact with the dragons lies broken. Climb the storm-battered stair and confront the dragon.","Victoria the Dragon","At the End of the Sky",new String[]{"Wyvern","Frost Elemental","Shadow Knight","Storm Harpy","Ancient Guardian"}));
     public static Region region(Area area) { return REGIONS.get(area.ordinal()); }
     public static Enemy encounter(Area area, int playerLevel, boolean boss, Random random, int towerFloor) {
         Region region=region(area);

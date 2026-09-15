@@ -17,13 +17,18 @@ public final class GameSession {
 
     public GameSession(Player player, Random random) {
         this.player=Objects.requireNonNull(player); this.random=Objects.requireNonNull(random);
-        say("Welcome to Hearthglen in Cindergard, "+player.getName()+". Choose Whispering Woods to begin your first expedition.");
+        say("Welcome to Cindergard, "+player.getName()+". Choose Whispering Woods to begin your first expedition.");
     }
     private void say(String text) { log.add(text); while(log.size()>40)log.remove(0); }
     private void require(boolean condition,String message) { if(!condition)throw new IllegalArgumentException(message); }
     private void inTown() { require(mode==Mode.TOWN,"Return to town first."); }
     public boolean unlocked(Area target) {
-        return player.getLevel()>=target.getMinLevel() && (target.ordinal()==0 || cleared.contains(Area.values()[target.ordinal()-1].name()));
+        for(int i=0;i<target.ordinal();i++)if(!cleared.contains(Area.values()[i].name()))return false;
+        return true;
+    }
+    private int shopLevel() {
+        int ceiling=Arrays.stream(Area.values()).filter(this::unlocked).mapToInt(Area::getMaxLevel).max().orElse(4);
+        return Math.min(player.getLevel(),ceiling);
     }
     public void command(String action,String value) {
         require(action!=null,"Choose an action.");
@@ -31,7 +36,7 @@ public final class GameSession {
         switch(action) {
             case "adventure" -> {
                 inTown(); Area target=Area.valueOf(value);
-                require(unlocked(target),"Clear the previous region and reach level "+target.getMinLevel()+" first.");
+                require(unlocked(target),"Clear the preceding regions to open this route.");
                 require(!player.isDead(),"Rest before departing.");
                 area=target;room=0;towerFloor=0;mode=Mode.TRAIL;
                 say(Campaign.region(area).story());
@@ -79,8 +84,8 @@ public final class GameSession {
             case "buy_gear" -> {
                 inTown();Equipment.Slot slot=Equipment.Slot.valueOf(value);
                 require(inventory.size()<30,"Make room in your bag first.");
-                int price=20+player.getLevel()*6;require(player.spendCoins(price),"Not enough coins for this equipment.");
-                Equipment bought=new Equipment(UUID.randomUUID().toString(),slot==Equipment.Slot.WEAPON?Equipment.weaponName(player.getPlayerClass(),Equipment.Rarity.COMMON):"Traveler's Coat",slot,Equipment.Rarity.COMMON,player.getLevel(),2+player.getLevel()/2,0);
+                int gearLevel=shopLevel();int price=20+gearLevel*6;require(player.spendCoins(price),"Not enough coins for this equipment.");
+                Equipment bought=new Equipment(UUID.randomUUID().toString(),slot==Equipment.Slot.WEAPON?Equipment.weaponName(player.getPlayerClass(),Equipment.Rarity.COMMON):"Traveler's Coat",slot,Equipment.Rarity.COMMON,gearLevel,2+gearLevel/2,0);
                 inventory.add(bought);say("Bought "+bought.name()+" for "+price+" coins. Equip it in your backpack.");
             }
             case "buy_potion" -> {
@@ -210,7 +215,7 @@ public final class GameSession {
         view.put("player",Map.ofEntries(Map.entry("name",player.getName()),Map.entry("type",player.getPlayerClass()),Map.entry("rank",WorldNames.rank(player.getPlayerClass(),cleared)),Map.entry("title",cleared.contains(Area.DRAGONS_SPIRE.name())?"Dragonbane":""),Map.entry("level",player.getLevel()),Map.entry("xp",player.getXp()),Map.entry("nextXp",player.getXpToNextLevel()),Map.entry("health",player.getHealth()),Map.entry("maxHealth",player.getMaxHealth()),Map.entry("resource",player.getResource()),Map.entry("maxResource",player.getMaxResource()),Map.entry("coins",player.getCoins()),Map.entry("potions",player.getPotions()),Map.entry("attack",player.getAttackPower()),Map.entry("defence",player.getDefence()),Map.entry("statuses",player.getStatuses())));
         view.put("mode",mode);view.put("area",area);view.put("room",room);view.put("towerFloor",towerFloor);view.put("towerBest",towerBest);
         view.put("kills",kills);view.put("deaths",deaths);view.put("log",List.copyOf(log));view.put("cleared",Set.copyOf(cleared));view.put("claimed",Set.copyOf(claimed));
-        view.put("chests",availableChests());view.put("chestEpicChance",Arrays.stream(Area.values()).filter(this::unlocked).anyMatch(a->a.getMinLevel()>=10)?8:0);view.put("shopPrice",20+player.getLevel()*6);
+        view.put("chests",availableChests());view.put("chestEpicChance",Arrays.stream(Area.values()).filter(this::unlocked).anyMatch(a->a.getMinLevel()>=10)?8:0);view.put("shopPrice",20+shopLevel()*6);view.put("shopLevel",shopLevel());
         view.put("inventory",inventory.stream().map(i->Map.of("item",i,"equipped",i.id().equals(equipped.get(i.slot())),"value",i.value(),"upgradeCost",i.upgradeCost(),"attributeDescription",i.attribute().description(),"protected",claimed.contains("keep:"+i.id()))).toList());
         view.put("regions",Campaign.REGIONS.stream().map(r->Map.of("id",r.area(),"name",r.area().getDisplayName(),"subtitle",r.subtitle(),"story",r.story(),"boss",r.boss(),"quest",r.quest(),"minLevel",r.area().getMinLevel(),"maxLevel",r.area().getMaxLevel(),"unlocked",unlocked(r.area()))).toList());
         view.put("abilities",player.getAbilities().stream().map(a->Map.of("id",a.id(),"name",a.name(),"cost",a.cost(),"unlockLevel",a.unlockLevel(),"cooldown",combat==null?0:combat.getCooldown(a.id()),"baseCooldown",a.cooldown())).toList());

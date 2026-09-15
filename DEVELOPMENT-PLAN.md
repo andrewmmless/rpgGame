@@ -170,3 +170,9 @@ Focused verification: level-up recovery, legacy XP acceptance, defend versus hea
 ### Naming applied
 
 Cindergard appears in the welcome, sign-in description and world screen. Character ranks use the exact class ladders above, derived from consecutive region clears, not level. Dragonbane is a separate title requiring the Dragon's Spire clear. WorldNames centralizes all planned sub-area and gathering names; these names do not yet represent playable new locations. Wayfarer remains the game title and Hearthglen the starting town.
+
+### Kingdom navigation and unlocks
+
+The Adventure screen now starts on Cindergard's region map. Hearthglen is an optional services destination. Geography follows the woodland road into Stonefang's tunnels, emerging in the royal ruins and ascending Dragon's Spire. Consecutive region boss clears unlock routes; level ranges are recommendations. Shop equipment is capped to the highest unlocked region, as regional loot already was. Cleared regions remain replayable. Tower is tucked under an optional challenge after the campaign.
+
+Still pending: playable sub-areas, prologue/NPC story dialogue and quests, authored rival encounters, and expanded region arcs. The current boss-clear campaign is the migration foundation for these features, not the completed story.
