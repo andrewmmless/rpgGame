@@ -176,3 +176,7 @@ Cindergard appears in the welcome, sign-in description and world screen. Charact
 The Adventure screen now starts on Cindergard's region map. Hearthglen is an optional services destination. Geography follows the woodland road into Stonefang's tunnels, emerging in the royal ruins and ascending Dragon's Spire. Consecutive region boss clears unlock routes; level ranges are recommendations. Shop equipment is capped to the highest unlocked region, as regional loot already was. Cleared regions remain replayable. Tower is tucked under an optional challenge after the campaign.
 
 Still pending: playable sub-areas, prologue/NPC story dialogue and quests, authored rival encounters, and expanded region arcs. The current boss-clear campaign is the migration foundation for these features, not the completed story.
+
+### Twelve-route story release
+
+See STORY-PATH.md for the canonical plot and latest implementation status. The complete linear story now spans all twelve named sub-areas through level 60, with NPC mission scenes, distinct guardians, route-by-route unlocks and a court ending. This supersedes the earlier notes saying sub-areas are unimplemented. Bespoke escort/defense objectives, rival duels, progression choices and shared co-op chapter advancement remain later work.

@@ -11,7 +11,7 @@ class SocialTest {
     @Test void earlyRegionDropsStayEarlyEvenForHighLevelPlayers(){
         Random lowest=new Random(){@Override public int nextInt(int bound){return 0;}@Override public boolean nextBoolean(){return false;}};
         Equipment early=Equipment.regionalDrop(lowest,100,true,PlayerClass.MAGE,Area.WHISPERING_WOODS);
-        assertEquals(4,early.level());assertEquals(Equipment.Rarity.RARE,early.rarity());assertTrue(early.name().startsWith("Woodland"));
+        assertEquals(15,early.level());assertEquals(Equipment.Rarity.RARE,early.rarity());assertTrue(early.name().startsWith("Woodland"));
         Equipment late=Equipment.regionalDrop(lowest,15,true,PlayerClass.MAGE,Area.FORGOTTEN_RUINS);assertEquals(Equipment.Rarity.EPIC,late.rarity());assertTrue(late.name().startsWith("Relic"));
     }
 }

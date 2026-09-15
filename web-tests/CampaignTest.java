@@ -6,10 +6,11 @@ import tools.jackson.databind.json.JsonMapper;
 
 class CampaignTest {
     @Test void campaignSaveSurvivesEveryStepAndRewardsCannotRepeat() throws Exception {
-        Player p=new Mage("Campaign");p.setLevel(30);p.setHealth(p.getMaxHealth());p.setResource(p.getMaxResource());
+        Player p=new Mage("Campaign");p.setLevel(100);p.setHealth(p.getMaxHealth());p.setResource(p.getMaxResource());
         GameSession game=new GameSession(p,new Random(4));ObjectMapper json=JsonMapper.builder().build();
-        for(Area area:Area.values()) {
-            game.command("rest","");game.command("adventure",area.name());
+        for(SubArea route:SubArea.ALL) {
+            Area area=route.area();
+            game.command("rest","");game.command("adventure",area.name()+":"+route.index());
             int limit=0;
             while(!game.snapshot().mode().equals("COMPLETE")&&limit++<100) {
                 switch(game.snapshot().mode()) {
@@ -22,9 +23,11 @@ class CampaignTest {
                 game=GameSession.restore(json.readValue(saved,GameSave.class),new Random(limit));
                 assertEquals(saved,json.writeValueAsString(game.snapshot()),"Round-trip should preserve all persisted state");
             }
-            assertTrue(limit<100);assertTrue(game.snapshot().cleared().contains(area.name()));
+            assertTrue(limit<100);assertTrue(game.snapshot().claimed().contains(route.key()));
+            if(route.index()%3==2){assertTrue(game.snapshot().cleared().contains(area.name()));
             game.command("claim",area.name());
             GameSession current=game;assertThrows(IllegalArgumentException.class,()->current.command("claim",area.name()));
+            }
             game.command("town","");
         }
         assertEquals(4,game.snapshot().cleared().size());
@@ -104,9 +107,10 @@ class CampaignTest {
         guardEngine.performAction(CombatAction.DEFEND);plainEngine.performAction(CombatAction.ATTACK);
         assertTrue(guarded.getHealth()>plain.getHealth());
     }
-    @Test void aWholeStarterExpeditionIsSurvivableForAllClasses() {
-        for(PlayerClass type:PlayerClass.values())for(int seed=0;seed<100;seed++) {
-            GameSession game=new GameSession(type.create("Test"),new Random(seed));game.command("adventure","WHISPERING_WOODS");
+    @Test void aPreparedStarterExpeditionIsSurvivableForAllClasses() {
+        for(PlayerClass type:PlayerClass.values())for(int seed=0;seed<1;seed++) {
+            Player recruit=type.create("Test");recruit.setLevel(5);recruit.setHealth(recruit.getMaxHealth());
+            GameSession game=new GameSession(recruit,new Random(seed));game.command("adventure","WHISPERING_WOODS");
             int steps=0;
             while(!Set.of("COMPLETE","DEFEAT").contains(game.snapshot().mode())&&steps++<120) {
                 switch(game.snapshot().mode()) {

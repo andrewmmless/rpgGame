@@ -22,24 +22,29 @@ public final class GameSession {
     private void say(String text) { log.add(text); while(log.size()>40)log.remove(0); }
     private void require(boolean condition,String message) { if(!condition)throw new IllegalArgumentException(message); }
     private void inTown() { require(mode==Mode.TOWN,"Return to town first."); }
-    public boolean unlocked(Area target) {
-        for(int i=0;i<target.ordinal();i++)if(!cleared.contains(Area.values()[i].name()))return false;
-        return true;
-    }
-    private int shopLevel() {
-        int ceiling=Arrays.stream(Area.values()).filter(this::unlocked).mapToInt(Area::getMaxLevel).max().orElse(4);
-        return Math.min(player.getLevel(),ceiling);
+    private int activeRoute() {return claimed.stream().filter(f->f.startsWith("route:active:")).mapToInt(f->Integer.parseInt(f.substring(13))).findFirst().orElse(-1);}
+    private SubArea route() {int index=activeRoute();return index<0||towerFloor>0?null:SubArea.get(index);}
+    public boolean unlocked(Area target) {return SubArea.get(target.ordinal()*3).unlocked(claimed,cleared);}
+    private SubArea highestRoute() {return SubArea.ALL.stream().filter(r->r.unlocked(claimed,cleared)).reduce((a,b)->b).orElse(SubArea.get(0));}
+    private int shopLevel() {return Math.min(player.getLevel(),highestRoute().maxLevel());}
+    private Equipment routeDrop(boolean boss,SubArea route) {
+        int level=Math.max(route.minLevel(),Math.min(route.maxLevel(),player.getLevel()));
+        return Equipment.regionalDrop(random,level,boss,player.getPlayerClass(),route.area());
     }
     public void command(String action,String value) {
         require(action!=null,"Choose an action.");
         if (value == null) value = "";
         switch(action) {
+            case "story" -> {inTown();say(StoryPath.speak(value,claimed,cleared));}
             case "adventure" -> {
-                inTown(); Area target=Area.valueOf(value);
-                require(unlocked(target),"Clear the preceding regions to open this route.");
+                inTown();String[] choice=value.split(":",-1);Area target=Area.valueOf(choice[0]);
+                int index=choice.length==1?SubArea.ALL.stream().filter(r->r.area()==target&&r.unlocked(claimed,cleared)).filter(r->!r.complete(claimed,cleared)).mapToInt(SubArea::index).findFirst().orElse(target.ordinal()*3):Integer.parseInt(choice[1]);
+                require(index>=0&&index<SubArea.ALL.size(),"Choose a route.");SubArea path=SubArea.get(index);
+                require(path.area()==target&&path.unlocked(claimed,cleared),"Complete the preceding story route first.");
                 require(!player.isDead(),"Rest before departing.");
+                claimed.removeIf(f->f.startsWith("route:active:"));claimed.add("route:active:"+index);
                 area=target;room=0;towerFloor=0;mode=Mode.TRAIL;
-                say(Campaign.region(area).story());
+                say(path.complete(claimed,cleared)?"Patrol: "+path.name()+". Keep the route safe and gather equipment.":path.captain()+": "+path.opening());
             }
             case "tower" -> {
                 inTown(); require(cleared.size()==4,"Defeat Victoria to unlock the Endless Tower.");
@@ -50,7 +55,7 @@ public final class GameSession {
                 require(mode==Mode.TRAIL,"You cannot advance right now.");
                 if(room==2) { mode=Mode.SHRINE; say("A spring bubbles beside an abandoned supply cache. Choose one before moving on."); }
                 else {
-                    enemy=Campaign.encounter(area,player.getLevel(),room==4,random,towerFloor);
+                    enemy=route()==null?Campaign.encounter(area,player.getLevel(),room==4,random,towerFloor):route().encounter(room,player.getLevel(),random);
                     combat=new CombatEngine(player,enemy,random);mode=Mode.COMBAT;
                     say("Encountered "+enemy.getName()+" (level "+enemy.getLevel()+").");
                 }
@@ -99,7 +104,7 @@ public final class GameSession {
             case "open_chest" -> {
                 inTown();require(availableChests()>0,"Earn a chest by winning three fights, clearing a new region, or clearing a new tower floor.");
                 require(inventory.size()<30,"Make room in your bag before opening a chest.");
-                Equipment reward=Equipment.regionalDrop(random,player.getLevel(),true,player.getPlayerClass(),Arrays.stream(Area.values()).filter(this::unlocked).reduce((a,b)->b).orElse(Area.WHISPERING_WOODS));
+                Equipment reward=routeDrop(true,highestRoute());
                 inventory.add(reward);claimed.add("chest:"+openedChests());
                 say("Opened a milestone chest: "+reward.name()+" ("+reward.rarity().name().toLowerCase(Locale.ROOT)+").");
             }
@@ -142,7 +147,14 @@ public final class GameSession {
                 kills++;drop(enemy.isBoss());
                 if(room==4) {
                     if(towerFloor>0) {towerBest=Math.max(towerBest,towerFloor);say("Tower floor "+towerFloor+" cleared. A harder floor awaits.");}
-                    else {cleared.add(area.name());say(Campaign.region(area).quest()+" complete. Claim the quest reward from your journal.");}
+                    else if(route()!=null) {
+                        SubArea path=route();boolean first=!path.complete(claimed,cleared);
+                        claimed.add(path.key());
+                        if(first){int xp=Balance.xpNeeded(path.minLevel())*2;player.gainXp(xp);say(path.ending());say("First route clear: +"+xp+" XP."+(path.index()<11?" The next route is open.":" Your campaign is complete."));}
+                        else say("Patrol complete. The road remains safe.");
+                        if(path.index()%3==2){cleared.add(area.name());say(Campaign.region(area).quest()+" complete. Claim the region reward in your journal.");}
+                    }
+                    else {cleared.add(area.name());say("Region complete. Your existing expedition progress has been preserved.");}
                     mode=Mode.COMPLETE;room=5;
                 } else { room++;mode=Mode.TRAIL; }
                 combat=null;
@@ -162,7 +174,7 @@ public final class GameSession {
         if(!boss && random.nextInt(100)>=55)return;
         Equipment item=towerFloor>0
             ? Equipment.drop(random,Math.min(player.getLevel(),enemy.getLevel()),boss,player.getPlayerClass())
-            : Equipment.regionalDrop(random,player.getLevel(),boss,player.getPlayerClass(),area);
+            : route()!=null?routeDrop(boss,route()):Equipment.regionalDrop(random,player.getLevel(),boss,player.getPlayerClass(),area);
         if(inventory.size()>=30) {player.addCoins(item.value());say("Pack full: sold "+item.name()+" for "+item.value()+" coins.");}
         else {inventory.add(item);say("Found "+item.rarity().name().toLowerCase(Locale.ROOT)+" "+item.name()+". Equip it when you return to town.");}
     }
@@ -213,9 +225,13 @@ public final class GameSession {
     public Map<String,Object> view() {
         Map<String,Object> view=new LinkedHashMap<>();
         view.put("player",Map.ofEntries(Map.entry("name",player.getName()),Map.entry("type",player.getPlayerClass()),Map.entry("rank",WorldNames.rank(player.getPlayerClass(),cleared)),Map.entry("title",cleared.contains(Area.DRAGONS_SPIRE.name())?"Dragonbane":""),Map.entry("level",player.getLevel()),Map.entry("xp",player.getXp()),Map.entry("nextXp",player.getXpToNextLevel()),Map.entry("health",player.getHealth()),Map.entry("maxHealth",player.getMaxHealth()),Map.entry("resource",player.getResource()),Map.entry("maxResource",player.getMaxResource()),Map.entry("coins",player.getCoins()),Map.entry("potions",player.getPotions()),Map.entry("attack",player.getAttackPower()),Map.entry("defence",player.getDefence()),Map.entry("statuses",player.getStatuses())));
+        view.put("story",StoryPath.view(claimed,cleared));
+        view.put("routes",SubArea.ALL.stream().map(r->Map.of("index",r.index(),"area",r.area(),"name",r.name(),"minLevel",r.minLevel(),"maxLevel",r.maxLevel(),"mission",r.mission(),"unlocked",r.unlocked(claimed,cleared),"complete",r.complete(claimed,cleared))).toList());
+        if(route()!=null)view.put("route",Map.of("name",route().name(),"mission",route().mission(),"opening",route().opening(),"ending",route().ending(),"guardian",route().guardian()));
+        view.put("storyArchive",SubArea.ALL.stream().filter(r->r.complete(claimed,cleared)).map(r->Map.of("name",r.name(),"text",r.ending())).toList());
         view.put("mode",mode);view.put("area",area);view.put("room",room);view.put("towerFloor",towerFloor);view.put("towerBest",towerBest);
         view.put("kills",kills);view.put("deaths",deaths);view.put("log",List.copyOf(log));view.put("cleared",Set.copyOf(cleared));view.put("claimed",Set.copyOf(claimed));
-        view.put("chests",availableChests());view.put("chestEpicChance",Arrays.stream(Area.values()).filter(this::unlocked).anyMatch(a->a.getMinLevel()>=10)?8:0);view.put("shopPrice",20+shopLevel()*6);view.put("shopLevel",shopLevel());
+        view.put("chests",availableChests());view.put("chestEpicChance",Math.max(highestRoute().minLevel(),Math.min(highestRoute().maxLevel(),player.getLevel()))>=31?8:0);view.put("shopPrice",20+shopLevel()*6);view.put("shopLevel",shopLevel());
         view.put("inventory",inventory.stream().map(i->Map.of("item",i,"equipped",i.id().equals(equipped.get(i.slot())),"value",i.value(),"upgradeCost",i.upgradeCost(),"attributeDescription",i.attribute().description(),"protected",claimed.contains("keep:"+i.id()))).toList());
         view.put("regions",Campaign.REGIONS.stream().map(r->Map.of("id",r.area(),"name",r.area().getDisplayName(),"subtitle",r.subtitle(),"story",r.story(),"boss",r.boss(),"quest",r.quest(),"minLevel",r.area().getMinLevel(),"maxLevel",r.area().getMaxLevel(),"unlocked",unlocked(r.area()))).toList());
         view.put("abilities",player.getAbilities().stream().map(a->Map.of("id",a.id(),"name",a.name(),"cost",a.cost(),"unlockLevel",a.unlockLevel(),"cooldown",combat==null?0:combat.getCooldown(a.id()),"baseCooldown",a.cooldown())).toList());

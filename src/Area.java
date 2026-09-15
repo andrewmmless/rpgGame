@@ -9,10 +9,10 @@
 
 public enum Area {
 
-    WHISPERING_WOODS("Whispering Woods", 1, 4),
-    STONEFANG_CAVES("Stonefang Caves", 5, 9),
-    FORGOTTEN_RUINS("Forgotten Ruins", 10, 15),
-    DRAGONS_SPIRE("Dragon's Spire", 16, 25);
+    WHISPERING_WOODS("Whispering Woods", 1, 15),
+    STONEFANG_CAVES("Stonefang Caves", 16, 30),
+    FORGOTTEN_RUINS("Forgotten Ruins", 31, 45),
+    DRAGONS_SPIRE("Dragon's Spire", 46, 60);
 
     private final String displayName;
     private final int minLevel;
