@@ -68,25 +68,6 @@ public class GameRepository {
             return response(game,0);
         });
     }
-    public Map<String,Object> importConsole(String user,String text) {
-        if(text==null || text.length()>16000)throw new IllegalArgumentException("Choose a console save smaller than 16 KB.");
-        Properties data=new Properties();
-        try {data.load(new java.io.StringReader(text));}
-        catch(Exception e){throw new IllegalArgumentException("Invalid save file.");}
-        String name=data.getProperty("Name","");
-        if(!name.matches("[\\p{L}\\p{N} _-]{1,40}")||name.isBlank())throw new IllegalArgumentException("Invalid character name in save.");
-        try {
-            Player p=PlayerClass.valueOf(data.getProperty("Class","").toUpperCase(Locale.ROOT)).create(name);
-            String version=data.getProperty("Version","3");
-            if(!version.equals("3")&&!version.equals("4"))throw new IllegalArgumentException();
-            p.setLevel(Integer.parseInt(data.getProperty("Level","1")));
-            int xp=Integer.parseInt(data.getProperty("Xp","0"));
-            if(version.equals("3"))xp=(int)Math.min(Math.max(0,p.getXpToNextLevel()-1),(long)xp*p.getXpToNextLevel()/Math.max(1,Integer.parseInt(data.getProperty("XpToNextLevel","20"))));
-            p.setXp(xp);p.setHealth(p.getMaxHealth());p.setResource(p.getMaxResource());
-            p.setCoins(Integer.parseInt(data.getProperty("Coins","0")));p.setPotions(Integer.parseInt(data.getProperty("Potions","3")));p.setSwordDamage(Integer.parseInt(data.getProperty("SwordDamage","0")));
-            return insert(user,new GameSession(p,new Random()),false);
-        } catch(IllegalArgumentException e){throw new IllegalArgumentException("Invalid console save, or this account already has a character.");}
-    }
     public Map<String,Object> command(String user,long expectedVersion,String action,String value) {
         return transactions.execute(status -> {
             Row row=row(user);
@@ -107,7 +88,7 @@ public class GameRepository {
             user,save.player().name(),save.player().type().name(),save.player().level(),save.kills(),save.cleared().size(),save.towerBest(),Boolean.TRUE.equals(ranked));
     }
     public List<Map<String,Object>> leaderboard() {
-        return jdbc.query("SELECT character_name,player_class,level,kills,bosses,tower,ranked FROM hearthglen.rpg_scores ORDER BY ranked DESC,tower DESC,bosses DESC,level DESC,kills DESC,username ASC",
+        return jdbc.query("SELECT character_name,player_class,level,kills,bosses,tower,ranked FROM hearthglen.rpg_scores WHERE ranked = TRUE ORDER BY tower DESC,bosses DESC,level DESC,kills DESC,username ASC",
             (rs,n)->Map.<String,Object>of("name",rs.getString(1),"type",rs.getString(2),"level",rs.getInt(3),"kills",rs.getInt(4),"bosses",rs.getInt(5),"tower",rs.getInt(6),"ranked",rs.getBoolean(7)));
     }
     public String export(String user) {

@@ -54,9 +54,17 @@ with tempfile.TemporaryDirectory(prefix='hearthglen-http-') as tmp:
         other=Client(base);other.token();other.request('/api/register',dict(username='qa_two',password=password),expect=201);other.login('qa_two',password)
         assert other.request('/api/game')['needsCharacter']
         other.request('/api/export',expect=400)
-        other.request('/api/import',dict(text='Name=Legacy\nClass=Cleric\nLevel=2\nHealth=8\nMaxHealth=30\nXp=10\nXpToNextLevel=35\nCoins=5\nPotions=2\n'))
-        assert other.request('/api/game')['player']['type']=='CLERIC'
-        board=c.request('/api/leaderboard');assert len(board)==2 and board[0]['ranked'] and not board[1]['ranked']
+        other.request('/api/import',dict(text='Name=Cheater\nClass=Mage\nLevel=100\nCoins=999999'),expect=404)
+        assert other.request('/api/game')['needsCharacter']
+        other.request('/api/character',dict(name='<script>alert(1)</script>',playerClass='MAGE'),expect=400)
+        before=c.request('/api/export')
+        c.request('/api/command',dict(version=state['version'],action='setScore',value='999999'),expect=400)
+        c.request('/api/command',dict(version=state['version'],action='claim',value='DRAGONS_SPIRE'),expect=400)
+        c.request('/api/leaderboard',dict(level=100,kills=999999),expect=405)
+        assert c.request('/api/export')==before,'Rejected score manipulation must not change progress'
+        other.request('/api/character',dict(name='Second Mage',playerClass='MAGE',level=100,kills=999999,ranked=True))
+        board=c.request('/api/leaderboard');assert len(board)==2 and all(row['ranked'] for row in board)
+        assert all(row['level']==1 and row['kills']==0 for row in board),'Client supplied stats must never affect scores'
         assert all('username' not in row for row in board)
         proc.terminate();proc.wait(timeout=15);proc=start()
         c=Client(base);c.login('qa_one',password)
@@ -64,6 +72,6 @@ with tempfile.TemporaryDirectory(prefix='hearthglen-http-') as tmp:
         state=c.request('/api/game');command('combat','ATTACK')
         assert state['mode']=='TRAIL' and state['kills']==1
         c.request('/api/logout',{},expect=204);c.request('/api/game',expect=401)
-        print('HTTP checks passed: registration, login, CSRF, account isolation, stale-tab protection, console import, battle autosave, server restart, victory, logout.')
+        print('HTTP checks passed: registration, login, CSRF, account isolation, stale-tab protection, blocked imports and forged scores, battle autosave, server restart, victory, logout.')
     finally:
         proc.terminate();proc.wait(timeout=15)
