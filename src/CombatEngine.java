@@ -34,6 +34,7 @@ public final class CombatEngine {
         if(!stunned && action==CombatAction.POTION && (player.getPotions()==0 || player.getHealth()==player.getMaxHealth()))
             return result(false,List.of("Potion cannot be used."));
         cooldowns.replaceAll((id,turns)->Math.max(0,turns-1));
+        Enemy.Move planned=enemy.move(round);
         int healthBeforeAction=enemy.getHealth();
         if(stunned) events.add("You are stunned.");
         else switch(action) {
@@ -49,7 +50,7 @@ public final class CombatEngine {
         if(player.isDead())outcome=CombatResult.Outcome.DEFEAT;
         if(outcome==CombatResult.Outcome.ACTIVE && !enemy.isDead()) {
             if(!enemy.hasStatus(StatusEffect.Kind.STUN)) {
-                enemy.performTurn(round,player,random,events);
+                enemy.performPlannedTurn(planned,player,random,events);
             }
             else events.add(enemy.getName()+" is stunned.");
             enemy.endTurn();

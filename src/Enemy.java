@@ -6,7 +6,9 @@ public class Enemy extends Character {
     public boolean isBoss() { return boss; }
     public void restoreHealth(int value) { if(value < 0 || value > maxHealth) throw new IllegalArgumentException(); health=value; }
     public enum Move { ATTACK, CHARGE, HEAVY, GUARD, POISON, DRAIN, SAP, RECOVER }
+    public String phase(){return !boss?"":health*2<=maxHealth?"Desperate phase":"Opening phase";}
     public Move move(int round) {
+        if(boss && BossPattern.regional(name))return BossPattern.move(name,round,health*2<=maxHealth);
         if(boss) return round%3==0?Move.CHARGE:round%3==1?Move.HEAVY:Move.ATTACK;
         if(level<3) return Move.ATTACK;
         return switch(name) {
@@ -43,7 +45,9 @@ public class Enemy extends Character {
     };}
     public double attackMultiplier(int round) { return move(round)==Move.HEAVY?2.6:move(round)==Move.CHARGE?0:1; }
     public void performTurn(int round, Player target, java.util.Random random, java.util.List<String> events) {
-        Move next=move(round);
+        performPlannedTurn(move(round),target,random,events);
+    }
+    public void performPlannedTurn(Move next, Player target, java.util.Random random, java.util.List<String> events) {
         if(next==Move.CHARGE) {events.add(name+" gathers strength. A heavy strike is coming!");return;}
         if(next==Move.GUARD) {
             applyStatus(new StatusEffect("guard",StatusEffect.Kind.GUARD,0,2));
@@ -51,7 +55,7 @@ public class Enemy extends Character {
         }
         if(next==Move.RECOVER){int before=health;heal(Math.max(4,maxHealth/8));events.add(name+" recovered "+(health-before)+" health.");return;}
         if(next==Move.SAP){if(target.hasStatus(StatusEffect.Kind.GUARD))events.add("Your guard blocks the resource siphon.");else{int lost=Math.min(8,target.getResource());target.spendResource(lost);events.add(name+" drained "+lost+" resource.");}}
-        int dealt=target.receiveDamage((int)Math.round(rollDamage(random,-1,1)*attackMultiplier(round)),DamageType.PHYSICAL);
+        int dealt=target.receiveDamage((int)Math.round(rollDamage(random,-1,1)*(next==Move.HEAVY?2.6:1)),DamageType.PHYSICAL);
         events.add(name+" dealt "+dealt+" damage.");
         if(next==Move.POISON && !target.isDead()) {
             target.applyStatus(new StatusEffect("poison",StatusEffect.Kind.DAMAGE_OVER_TIME,Math.max(2,level/2),2));events.add("Poison will hurt for two turns.");

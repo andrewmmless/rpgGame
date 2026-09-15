@@ -8,6 +8,7 @@ public record Equipment(String id, String name, Slot slot, Rarity rarity, int le
     }
     public Equipment {
         Objects.requireNonNull(id); Objects.requireNonNull(name); Objects.requireNonNull(slot); Objects.requireNonNull(rarity);
+        if(rarity==Rarity.LEGENDARY&&slot==Slot.WEAPON&&name.startsWith("Cindergard"))attribute=WeaponAttribute.CROWNWARD;
         if(attribute==null)attribute=WeaponAttribute.NONE; // Existing saves predate weapon attributes.
         if(slot==Slot.ARMOUR && attribute!=WeaponAttribute.NONE)throw new IllegalArgumentException("Weapon attributes require a weapon");
         if (level < 1 || power < 1 || upgrades < 0 || upgrades > 5) throw new IllegalArgumentException("Invalid item");

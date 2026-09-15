@@ -70,11 +70,18 @@ public final class GameSession {
                 if(room==2) { mode=Mode.SHRINE; say("A spring bubbles beside an abandoned supply cache. Choose one before moving on."); }
                 else {
                     enemy=route()==null?Campaign.encounter(area,player.getLevel(),room==4,random,towerFloor):route().encounter(room,player.getLevel(),random);
-                    combat=new CombatEngine(player,enemy,random);mode=Mode.COMBAT;if(missionActive())setMissionValue("work",0);
+                    combat=new CombatEngine(player,enemy,random);if(claimed.contains("mission:scout"))player.applyStatus(new StatusEffect("scouted",StatusEffect.Kind.GUARD,0,2));mode=Mode.COMBAT;if(missionActive())setMissionValue("work",0);
                     say("Encountered "+enemy.getName()+" (level "+enemy.getLevel()+").");
                 }
             }
             case "combat" -> fight(value);
+            case "road_choice" -> {
+                require(mode==Mode.SHRINE&&route()!=null,"Choose at a story waystation.");
+                require(Set.of("rescue","scout").contains(value),"Choose a mission approach.");
+                if(value.equals("rescue")){require(player.getResource()>=12,"Rescuing survivors needs 12 resource.");player.spendResource(12);claimed.add("mission:rescue");say("You escort stranded workers to safety. Complete this route for a relief payment; you forgo the spring's recovery.");}
+                else {claimed.add("mission:scout");say("You study the enemy approach. Start each remaining encounter guarded, but forgo the supply cache.");}
+                room++;mode=Mode.TRAIL;
+            }
             case "spring" -> {
                 require(mode==Mode.SHRINE,"There is no spring here.");
                 player.heal(player.getMaxHealth()*45/100);player.restoreResource(20);room++;mode=Mode.TRAIL;
@@ -88,7 +95,7 @@ public final class GameSession {
             case "town" -> {
                 require(mode!=Mode.COMBAT,"Use Run to escape combat first.");
                 require(mode!=Mode.DEFEAT,"Recover before returning.");
-                mode=Mode.TOWN;enemy=null;combat=null;towerFloor=0;say("Returned to Hearthglen. Rest at the inn before your next expedition.");
+                mode=Mode.TOWN;enemy=null;combat=null;towerFloor=0;say("Returned to the Crown District. Rest at the inn before your next expedition.");
             }
             case "rest" -> {
                 inTown();player.setHealth(player.getMaxHealth());player.setResource(player.getMaxResource());
@@ -193,6 +200,7 @@ public final class GameSession {
                     else if(route()!=null) {
                         SubArea path=route();boolean first=!path.complete(claimed,cleared);
                         claimed.add(path.key());
+                        if(claimed.remove("mission:rescue")){int payment=20+path.minLevel()*2;player.addCoins(payment);claimed.add("story:relief:"+path.index());say("The rescued workers reach the capital: +"+payment+" coins. Your relief service is recorded.");}
                         if(first){int xp=Balance.xpNeeded(path.minLevel())*2;player.gainXp(xp);say(path.ending());say("First route clear: +"+xp+" XP."+(path.index()<11?" The next route is open.":" Your campaign is complete."));}
                         else say("Patrol complete. The road remains safe.");
                         if(path.index()%3==2){say("Boss trophy: +1 "+BossMaterials.award(claimed,path.index())+". Use it at the Forge.");cleared.add(area.name());say(Campaign.region(area).quest()+" complete. Claim the region reward in your journal.");}
@@ -282,7 +290,7 @@ public final class GameSession {
         view.put("regions",Campaign.REGIONS.stream().map(r->Map.of("id",r.area(),"name",r.area().getDisplayName(),"subtitle",r.subtitle(),"story",r.story(),"boss",r.boss(),"quest",r.quest(),"minLevel",r.area().getMinLevel(),"maxLevel",r.area().getMaxLevel(),"unlocked",unlocked(r.area()))).toList());
         view.put("build",CharacterBuild.view(player,claimed,cleared));
         view.put("abilities",player.getAvailableAbilities().stream().map(a->Map.of("id",a.id(),"name",a.name(),"cost",a.cost(),"unlockLevel",a.unlockLevel(),"cooldown",combat==null?0:combat.getCooldown(a.id()),"baseCooldown",a.cooldown())).toList());
-        if(mode==Mode.COMBAT)view.put("enemy",Map.of("name",enemy.getName(),"level",enemy.getLevel(),"health",enemy.getHealth(),"maxHealth",enemy.getMaxHealth(),"boss",enemy.isBoss(),"intent",enemy.intent(combat.getRound()),"advice",enemy.advice(combat.getRound()),"statuses",enemy.getStatuses()));
+        if(mode==Mode.COMBAT)view.put("enemy",Map.of("name",enemy.getName(),"level",enemy.getLevel(),"health",enemy.getHealth(),"maxHealth",enemy.getMaxHealth(),"boss",enemy.isBoss(),"intent",enemy.intent(combat.getRound()),"advice",enemy.advice(combat.getRound()),"statuses",enemy.getStatuses(),"phase",enemy.phase()));
         return view;
     }
 }

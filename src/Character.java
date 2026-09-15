@@ -58,6 +58,7 @@ public abstract class Character {
             statuses.put(state.effect().id(), active);
         }
     }
+    public void removeStatus(String id){statuses.remove(id);}
     public void clearStatuses() { statuses.clear(); }
     public Map<String,Integer> getStatuses() {
         Map<String,Integer> result=new LinkedHashMap<>(); statuses.forEach((id,s)->result.put(id,s.remaining)); return Map.copyOf(result);

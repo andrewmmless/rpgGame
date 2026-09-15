@@ -18,10 +18,11 @@ public class SocialStore {
     String bondId(String a,String b){return a.compareTo(b)<0?a+":"+b:b+":"+a;}
     Bond bond(String a,String b){return jdbc.query("SELECT payload FROM hearthglen.rpg_bond WHERE id=?",(r,n)->json.readValue(r.getString(1),Bond.class),bondId(a,b)).stream().findFirst().orElse(new Bond());}
     void saveBond(String a,String b,Bond bond){String id=bondId(a,b),payload=json.writeValueAsString(bond);if(jdbc.update("UPDATE hearthglen.rpg_bond SET payload=? WHERE id=?",payload,id)==0)jdbc.update("INSERT INTO hearthglen.rpg_bond(id,payload) VALUES (?,?)",id,payload);}
+    public boolean infirmary(CoopDungeon p){String id=guildId(p.members.get(0).username);return id!=null&&id.equals(guildId(p.members.get(1).username))&&guild(id).owned.contains("project:infirmary");}
     public boolean duoUnlocked(CoopDungeon p){return p.members.size()==2&&bond(p.members.get(0).username,p.members.get(1).username).clears>=3;}
     public void completed(CoopDungeon p){String a=p.members.get(0).username,b=p.members.get(1).username;Bond bond=bond(a,b);long now=System.currentTimeMillis();boolean credit=p.round>=3&&now-bond.lastCredit>=300000;
         if(credit){bond.clears++;bond.lastCredit=now;}String memory=java.time.LocalDate.now(java.time.ZoneOffset.UTC)+" · "+p.missionName()+" cleared in "+p.round+" rounds; "+p.rescuesUsed+" rescue used.";bond.memories.add(memory);while(bond.memories.size()>20)bond.memories.remove(0);saveBond(a,b,bond);
-        String id=guildId(a);if(id!=null&&id.equals(guildId(b))){GuildHouse g=guild(id);if(credit)g.materials=Math.min(999,g.materials+1);if(p.storyRoute==null)g.owned.add("warden_trophy");if(bond.clears>=5)g.owned.add("bond_lantern");g.record(memory+(credit?" House supplies delivered.":" Bond credit is limited to one clear per five minutes."));saveGuild(id,g);}
+        String id=guildId(a);if(id!=null&&id.equals(guildId(b))){GuildHouse g=guild(id);if(credit)g.materials=Math.min(999,g.materials+(g.owned.contains("project:workshop")?2:1));if(p.storyRoute==null)g.owned.add("warden_trophy");if(bond.clears>=5)g.owned.add("bond_lantern");g.record(memory+(credit?" House supplies delivered.":" Bond credit is limited to one clear per five minutes."));saveGuild(id,g);}
         p.say(credit?"Bond progress +1. Complete three credited adventures together to unlock Rally.":"Victory recorded. Bond credit requires at least three rounds and five minutes between credited clears.");
     }
 }
