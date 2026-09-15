@@ -5,6 +5,8 @@ public class CoopDungeon {
     public String state="LOBBY",leader;
     public int round,enemyHealth,enemyMaxHealth,level;
     public long deadline;
+    public record Reward(String name,int xp,int coins,Equipment item,int convertedCoins) {}
+    public List<Reward> rewards=new ArrayList<>();
     public List<Member> members=new ArrayList<>();
     public List<Character.StatusState> enemyStatuses=new ArrayList<>();
     public List<String> log=new ArrayList<>();

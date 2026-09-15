@@ -80,7 +80,7 @@ public final class GameSession {
                 inTown();Equipment.Slot slot=Equipment.Slot.valueOf(value);
                 require(inventory.size()<30,"Make room in your bag first.");
                 int price=20+player.getLevel()*6;require(player.spendCoins(price),"Not enough coins for this equipment.");
-                Equipment bought=new Equipment(UUID.randomUUID().toString(),slot==Equipment.Slot.WEAPON?"Iron Longsword":"Traveler's Coat",slot,Equipment.Rarity.COMMON,player.getLevel(),2+player.getLevel()/2,0);
+                Equipment bought=new Equipment(UUID.randomUUID().toString(),slot==Equipment.Slot.WEAPON?Equipment.weaponName(player.getPlayerClass(),Equipment.Rarity.COMMON):"Traveler's Coat",slot,Equipment.Rarity.COMMON,player.getLevel(),2+player.getLevel()/2,0);
                 inventory.add(bought);say("Bought "+bought.name()+" for "+price+" coins. Equip it in your backpack.");
             }
             case "buy_potion" -> {
@@ -94,12 +94,20 @@ public final class GameSession {
             case "open_chest" -> {
                 inTown();require(availableChests()>0,"Earn a chest by winning three fights, clearing a new region, or clearing a new tower floor.");
                 require(inventory.size()<30,"Make room in your bag before opening a chest.");
-                Equipment reward=Equipment.drop(random,player.getLevel(),true);
+                Equipment reward=Equipment.drop(random,player.getLevel(),true,player.getPlayerClass());
                 inventory.add(reward);claimed.add("chest:"+openedChests());
                 say("Opened a milestone chest: "+reward.name()+" ("+reward.rarity().name().toLowerCase(Locale.ROOT)+").");
             }
             case "equip" -> {
                 inTown();Equipment item=item(value);equipped.put(item.slot(),item.id());applyEquipment();say("Equipped "+item.name()+".");
+            }
+            case "sell_many" -> {
+                inTown();String[] ids=value.split(",",-1);require(ids.length>=1&&ids.length<=30,"Choose 1–30 items.");
+                Set<String> unique=new HashSet<>(Arrays.asList(ids));require(unique.size()==ids.length,"An item was selected more than once.");
+                List<Equipment> items=unique.stream().map(this::item).toList();
+                require(items.stream().noneMatch(i->equipped.containsValue(i.id())),"Equipped items cannot be sold.");
+                int total=items.stream().mapToInt(Equipment::value).sum();player.addCoins(total);inventory.removeAll(items);
+                say("Sold "+items.size()+" items for "+total+" coins.");
             }
             case "sell" -> {
                 inTown();Equipment item=item(value);require(!equipped.containsValue(item.id()),"Unequip this item by equipping another before selling it.");
@@ -146,7 +154,7 @@ public final class GameSession {
     private Equipment item(String id) { return inventory.stream().filter(i->i.id().equals(id)).findFirst().orElseThrow(()->new IllegalArgumentException("Item not found.")); }
     private void drop(boolean boss) {
         if(!boss && random.nextInt(100)>=55)return;
-        Equipment item=Equipment.drop(random,player.getLevel(),boss);
+        Equipment item=Equipment.drop(random,player.getLevel(),boss,player.getPlayerClass());
         if(inventory.size()>=30) {player.addCoins(item.value());say("Pack full: sold "+item.name()+" for "+item.value()+" coins.");}
         else {inventory.add(item);say("Found "+item.rarity().name().toLowerCase(Locale.ROOT)+" "+item.name()+". Equip it when you return to town.");}
     }

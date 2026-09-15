@@ -20,11 +20,12 @@ with tempfile.TemporaryDirectory(prefix='wayfarer-coop-') as tmp:
             c=Client(base);c.token();c.request('/api/register',dict(username=name,password=password),expect=201);c.login(name,password);c.request('/api/character',dict(name=name,playerClass=kind));clients.append(c)
         a,b=clients
         party=a.request('/api/coop/create',{})
+        assert len(party['id'])==6 and party['id'].isalnum()
         a.request('/api/coop/create',{},expect=400)
         a.request('/api/command',dict(version=0,action='rest',value=''),expect=400)
         def move(c,party,action,value='',expect=200):return c.request('/api/coop/move',dict(id=party['id'],round=party['round'],action=action,value=value),expect=expect)
         b.request('/api/coop/move',dict(id=party['id'],round=0,action='start',value=''),expect=400)
-        party=b.request('/api/coop/join',dict(code=party['id']))
+        party=b.request('/api/coop/join',dict(code=' '+party['id'].upper()+' '))
         move(b,party,'start',expect=400)
         party=move(a,party,'start')
         party=move(a,party,'choose','ATTACK')
@@ -50,6 +51,8 @@ with tempfile.TemporaryDirectory(prefix='wayfarer-coop-') as tmp:
                 results=list(pool.map(lambda pair:move(pair[0],pair[1],'choose',choose(pair[1])),[(a,pa),(b,pb)]))
             party=a.request('/api/coop')
         assert party['state']=='VICTORY',party
+        assert len(party['rewards'])==2 and all(r['xp']==40 and r['coins']==40 for r in party['rewards'])
+        assert a.request('/api/coop')['rewards']==party['rewards']
         saves=[c.request('/api/export') for c in [a,b]]
         assert all(s['kills']==1 and len(s['inventory'])==1 and s['player']['coins']>=40 for s in saves)
         move(a,party,'choose','ATTACK',expect=400)
