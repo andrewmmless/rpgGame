@@ -2,7 +2,7 @@ import java.util.*;
 
 public record Equipment(String id, String name, Slot slot, Rarity rarity, int level, int power, int upgrades, WeaponAttribute attribute) {
     public enum Slot { WEAPON, ARMOUR }
-    public enum Rarity { COMMON, RARE, EPIC }
+    public enum Rarity { COMMON, RARE, EPIC, LEGENDARY }
     public Equipment(String id,String name,Slot slot,Rarity rarity,int level,int power,int upgrades) {
         this(id,name,slot,rarity,level,power,upgrades,WeaponAttribute.NONE);
     }
@@ -20,10 +20,10 @@ public record Equipment(String id, String name, Slot slot, Rarity rarity, int le
     }
     public static String weaponName(PlayerClass type,Rarity rarity) {
         String[] names=switch(type){
-            case WARRIOR -> new String[]{"Iron Longsword","Runebound Edge","Dawnbringer"};
-            case MAGE -> new String[]{"Ashwood Staff","Runebound Staff","Starfire Staff"};
-            case CLERIC -> new String[]{"Iron Mace","Sanctified Mace","Dawnkeeper's Sceptre"};
-            case ROGUE -> new String[]{"Iron Daggers","Nightsteel Daggers","Whisperfangs"};
+            case WARRIOR -> new String[]{"Iron Longsword","Runebound Edge","Dawnbringer","Crownfire Longsword"};
+            case MAGE -> new String[]{"Ashwood Staff","Runebound Staff","Starfire Staff","Crownfire Staff"};
+            case CLERIC -> new String[]{"Iron Mace","Sanctified Mace","Dawnkeeper's Sceptre","Crownfire Sceptre"};
+            case ROGUE -> new String[]{"Iron Daggers","Nightsteel Daggers","Whisperfangs","Crownfire Daggers"};
         };return names[rarity.ordinal()];
     }
     public static Equipment regionalDrop(Random random,int playerLevel,boolean boss,PlayerClass type,Area area){

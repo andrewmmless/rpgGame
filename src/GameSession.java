@@ -46,7 +46,7 @@ public final class GameSession {
         switch(action) {
             case "gather","sell_material" -> {inTown();String[] parts=value.split(":");require(parts.length==2,"Choose a gathering site.");Gathering profession=Gathering.valueOf(parts[0]);int tier=Integer.parseInt(parts[1]);say(action.equals("gather")?profession.gather(tier,player,claimed,cleared,random):profession.sell(tier,player,claimed));}
             case "attribute","specialise","upgrade_ability","loadout","reset_build" -> {inTown();CharacterBuild.command(action,value,player,claimed,cleared);say("Character build updated. Rest to fill any increased health or resource capacity.");}
-            case "craft" -> {inTown();Equipment item=Crafting.craft(value,player,claimed,cleared,inventory.size());if(item!=null)inventory.add(item);say("Crafted "+Crafting.recipe(value).name()+".");}
+            case "craft" -> {inTown();Equipment item=Crafting.craft(value,player,claimed,cleared,inventory.size());if(item!=null){inventory.add(item);if(item.rarity()==Equipment.Rarity.LEGENDARY)claimed.add("keep:"+item.id());}say("Crafted "+Crafting.recipe(value).name()+".");}
             case "objective" -> workObjective();
             case "story" -> {inTown();say(StoryPath.speak(value,claimed,cleared));}
             case "adventure" -> {
@@ -195,7 +195,7 @@ public final class GameSession {
                         claimed.add(path.key());
                         if(first){int xp=Balance.xpNeeded(path.minLevel())*2;player.gainXp(xp);say(path.ending());say("First route clear: +"+xp+" XP."+(path.index()<11?" The next route is open.":" Your campaign is complete."));}
                         else say("Patrol complete. The road remains safe.");
-                        if(path.index()%3==2){cleared.add(area.name());say(Campaign.region(area).quest()+" complete. Claim the region reward in your journal.");}
+                        if(path.index()%3==2){say("Boss trophy: +1 "+BossMaterials.award(claimed,path.index())+". Use it at the Forge.");cleared.add(area.name());say(Campaign.region(area).quest()+" complete. Claim the region reward in your journal.");}
                     }
                     else {cleared.add(area.name());say("Region complete. Your existing expedition progress has been preserved.");}
                     mode=Mode.COMPLETE;room=5;
@@ -240,7 +240,7 @@ public final class GameSession {
         boolean first=!path.complete(claimed,cleared);claimed.add(path.key());
         int bonus=first?Balance.xpNeeded(path.minLevel())*2:0;
         if(first){player.gainXp(bonus);say(path.ending());say("Shared story clear: +"+bonus+" XP.");}
-        if(index%3==2)cleared.add(path.area().name());
+        if(index%3==2){cleared.add(path.area().name());say("Boss trophy: +1 "+BossMaterials.award(claimed,index)+". Use it at the Forge.");}
         player.configureBuild(claimed,cleared);return bonus;
     }
     public GameSave snapshot() {
