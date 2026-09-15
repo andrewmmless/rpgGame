@@ -48,29 +48,29 @@ public class GameRepository {
         try {return json.writeValueAsString(game.snapshot());}
         catch(Exception e){throw new IllegalStateException("Could not prepare save.",e);}
     }
-    private Map<String,Object> response(GameSession game,long version) {
-        Map<String,Object> result=new LinkedHashMap<>(game.view());result.put("version",version);return result;
+    private Map<String,Object> response(String user,GameSession game,long version) {
+        Map<String,Object> result=new LinkedHashMap<>(game.view());result.put("version",version);result.put("generation",CharacterSlots.generation(jdbc,user));return result;
     }
     public Map<String,Object> load(String user) {
-        Row row=row(user);return row==null?Map.of("needsCharacter",true):response(decode(row.payload()),row.version());
+        return transactions.execute(status->{SocialStore.lock(jdbc);Row row=row(user);return row==null?Map.of("needsCharacter",true,"generation",CharacterSlots.generation(jdbc,user)):response(user,decode(row.payload()),row.version());});
     }
-    public Map<String,Object> create(String user,String name,String className) {
+    public Map<String,Object> create(String user,String name,String className,long generation) {
         if(name==null || !name.matches("[\\p{L}\\p{N} _-]{1,40}") || name.isBlank())throw new IllegalArgumentException("Use 1–40 letters, numbers, spaces, underscores or dashes for your character name.");
         PlayerClass type;
         try {type=PlayerClass.valueOf(className);}catch(Exception e){throw new IllegalArgumentException("Choose a class.");}
-        GameSession game=new GameSession(type.create(name.strip()),new Random());return insert(user,game,true);
+        GameSession game=new GameSession(type.create(name.strip()),new Random());return transactions.execute(status->{SocialStore.lock(jdbc);CharacterSlots.validate(jdbc,user,generation);for(String text:jdbc.query("SELECT payload FROM hearthglen.rpg_character_slots WHERE username=? AND slot<>?",(r,n)->r.getString(1),user,CharacterSlots.active(jdbc,user)))if(decode(text).snapshot().player().type()==type)throw new IllegalArgumentException("You already have a character of this class in another slot.");return insert(user,game,true);});
     }
     private Map<String,Object> insert(String user,GameSession game,boolean ranked) {
         return transactions.execute(status -> {
             try {jdbc.update("INSERT INTO hearthglen.rpg_saves(username,version,payload) VALUES (?,0,?)",user,encode(game));}
             catch(DuplicateKeyException e){throw new IllegalArgumentException("You already have a character. Reload to continue.");}
             scores(user,game,ranked);
-            return response(game,0);
+            return response(user,game,0);
         });
     }
-    public Map<String,Object> command(String user,long expectedVersion,String action,String value) {
+    public Map<String,Object> command(String user,long expectedVersion,String action,String value,long generation) {
         return transactions.execute(status -> {
-            SocialStore.lock(jdbc);
+            SocialStore.lock(jdbc);CharacterSlots.validate(jdbc,user,generation);
             jdbc.queryForList("SELECT username FROM hearthglen.rpg_saves WHERE username=? FOR UPDATE",user);
             int active=jdbc.queryForObject("SELECT COUNT(*) FROM hearthglen.rpg_coop_members m JOIN hearthglen.rpg_coop p ON p.id=m.party_id WHERE m.username=? AND p.active=TRUE",Integer.class,user);
             if(active>0)throw new IllegalArgumentException("Leave or finish your co-op party before playing solo.");
@@ -81,7 +81,7 @@ public class GameRepository {
             int updated=jdbc.update("UPDATE hearthglen.rpg_saves SET payload=?,version=version+1 WHERE username=? AND version=?",encode(game),user,expectedVersion);
             if(updated!=1)throw new StaleGameException();
             scores(user,game,null);
-            return response(game,expectedVersion+1);
+            return response(user,game,expectedVersion+1);
         });
     }
     void scores(String user,GameSession game,Boolean ranked) {

@@ -38,3 +38,5 @@ INSERT INTO hearthglen.rpg_social_lock(id) SELECT 1 WHERE NOT EXISTS (SELECT 1 F
 CREATE TABLE IF NOT EXISTS hearthglen.rpg_guild (id VARCHAR(32) PRIMARY KEY, payload TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS hearthglen.rpg_guild_member (username VARCHAR(32) PRIMARY KEY REFERENCES hearthglen.rpg_users(username), guild_id VARCHAR(32) NOT NULL REFERENCES hearthglen.rpg_guild(id));
 CREATE TABLE IF NOT EXISTS hearthglen.rpg_bond (id VARCHAR(70) PRIMARY KEY, payload TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS hearthglen.rpg_slot_state (username VARCHAR(32) PRIMARY KEY REFERENCES hearthglen.rpg_users(username), active_slot INTEGER NOT NULL, generation BIGINT NOT NULL);
+CREATE TABLE IF NOT EXISTS hearthglen.rpg_character_slots (username VARCHAR(32) NOT NULL REFERENCES hearthglen.rpg_users(username), slot INTEGER NOT NULL, payload TEXT NOT NULL, ranked BOOLEAN NOT NULL, PRIMARY KEY(username,slot));
