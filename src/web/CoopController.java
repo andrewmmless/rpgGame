@@ -10,9 +10,9 @@ import java.util.*;
 @RequestMapping("/api/coop")
 @org.springframework.boot.sql.init.dependency.DependsOnDatabaseInitialization
 public class CoopController {
-    private final JdbcTemplate jdbc;private final TransactionTemplate tx;private final GameRepository games;
+    private final JdbcTemplate jdbc;private final TransactionTemplate tx;private final GameRepository games;private final SocialStore social;
     private final JsonMapper json=JsonMapper.builder().build();
-    public CoopController(JdbcTemplate jdbc,PlatformTransactionManager manager,GameRepository games){this.jdbc=jdbc;this.tx=new TransactionTemplate(manager);this.games=games;}
+    public CoopController(JdbcTemplate jdbc,PlatformTransactionManager manager,GameRepository games,SocialStore social){this.social=social;this.jdbc=jdbc;this.tx=new TransactionTemplate(manager);this.games=games;}
     private static final java.security.SecureRandom CODES=new java.security.SecureRandom();
     private static final String ALPHABET="abcdefghjkmnpqrstuvwxyz23456789";
     private final Map<String,long[]> joinAttempts=new HashMap<>();
@@ -29,11 +29,11 @@ public class CoopController {
         for(int attempt=0;attempt<5;attempt++){try{return createParty(principal.getName());}catch(org.springframework.dao.DuplicateKeyException collision){/* Retry with a fresh transaction and code. */}}
         throw new IllegalArgumentException("Could not allocate a party code. Please try again.");
     }
-    private Map<String,Object> createParty(String user){return tx.execute(status->{GameSave s=eligible(user);CoopDungeon p=new CoopDungeon();p.add(user,s);String id=inviteCode();jdbc.update("INSERT INTO hearthglen.rpg_coop(id,active,payload) VALUES (?,TRUE,?)",id,json.writeValueAsString(p));jdbc.update("INSERT INTO hearthglen.rpg_coop_members(username,party_id) VALUES (?,?)",user,id);return view(id,p,user);});}
-    @PostMapping("/join") public Map<String,Object> join(Principal principal,@RequestBody Join body){String user=principal.getName();String id=body.code()==null?"":body.code().strip().toLowerCase(Locale.ROOT);joinLimit(user);CoopDungeon.require(id.matches("[a-z2-9]{6}|[a-f0-9]{16}"),"Enter the six-character party code (older codes also work).");return tx.execute(status->{CoopDungeon p=party(id,true);p.add(user,eligible(user));jdbc.update("INSERT INTO hearthglen.rpg_coop_members(username,party_id) VALUES (?,?)",user,id);save(id,p);return view(id,p,user);});}
-    @PostMapping("/move") public Map<String,Object> move(Principal principal,@RequestBody Move body){String user=principal.getName();return tx.execute(status->{String id=membership(user);CoopDungeon.require(id!=null&&id.equals(body.id()),"This is not your current party.");CoopDungeon p=party(id,true);CoopDungeon.require(p.members.stream().anyMatch(m->m.username.equals(user)),"Not a party member.");String before=p.state;
+    private Map<String,Object> createParty(String user){return tx.execute(status->{SocialStore.lock(jdbc);GameSave s=eligible(user);CoopDungeon p=new CoopDungeon();p.add(user,s);String id=inviteCode();jdbc.update("INSERT INTO hearthglen.rpg_coop(id,active,payload) VALUES (?,TRUE,?)",id,json.writeValueAsString(p));jdbc.update("INSERT INTO hearthglen.rpg_coop_members(username,party_id) VALUES (?,?)",user,id);return view(id,p,user);});}
+    @PostMapping("/join") public Map<String,Object> join(Principal principal,@RequestBody Join body){String user=principal.getName();String id=body.code()==null?"":body.code().strip().toLowerCase(Locale.ROOT);joinLimit(user);CoopDungeon.require(id.matches("[a-z2-9]{6}|[a-f0-9]{16}"),"Enter the six-character party code (older codes also work).");return tx.execute(status->{SocialStore.lock(jdbc);CoopDungeon p=party(id,true);p.add(user,eligible(user));jdbc.update("INSERT INTO hearthglen.rpg_coop_members(username,party_id) VALUES (?,?)",user,id);save(id,p);return view(id,p,user);});}
+    @PostMapping("/move") public Map<String,Object> move(Principal principal,@RequestBody Move body){String user=principal.getName();return tx.execute(status->{SocialStore.lock(jdbc);String id=membership(user);CoopDungeon.require(id!=null&&id.equals(body.id()),"This is not your current party.");CoopDungeon p=party(id,true);CoopDungeon.require(p.members.stream().anyMatch(m->m.username.equals(user)),"Not a party member.");String before=p.state;
         switch(body.action()==null?"":body.action()){
-            case "start" -> p.start(user,System.currentTimeMillis());
+            case "start" -> {p.duoUnlocked=social.duoUnlocked(p);p.start(user,System.currentTimeMillis());}
             case "choose" -> p.choose(user,body.round(),body.value(),System.currentTimeMillis(),new Random());
             case "rescue" -> p.rescue(user,System.currentTimeMillis());
             case "end_rescue" -> p.endRescue(System.currentTimeMillis());
@@ -41,14 +41,14 @@ public class CoopController {
             case "leave" -> {if(Set.of("LOBBY","BATTLE","RESCUE").contains(p.state)){p.state="ABANDONED";p.say("A player left. The party returned to town.");}jdbc.update("DELETE FROM hearthglen.rpg_coop_members WHERE username=? AND party_id=?",user,id);}
             default -> throw new IllegalArgumentException("Unknown party action.");
         }
-        if(Set.of("BATTLE","RESCUE").contains(before)&&!Set.of("BATTLE","RESCUE").contains(p.state))finish(p);
+        if(Set.of("BATTLE","RESCUE").contains(before)&&!Set.of("BATTLE","RESCUE").contains(p.state)){finish(p);if(p.state.equals("VICTORY"))social.completed(p);}
         save(id,p);return body.action().equals("leave")?Map.<String,Object>of("joined",false):view(id,p,user);
     });}
     private void finish(CoopDungeon party){
         // Party row lock serializes final resolution; reward writes and completion commit together.
         for(CoopDungeon.Member member:party.members.stream().sorted(Comparator.comparing(m->m.username)).toList()){
             GameSave stored=character(member.username);GameSession game=GameSession.restore(stored,new Random());boolean won=party.state.equals("VICTORY");
-            Equipment reward=won?Equipment.drop(new Random(),member.original.player().level(),true,member.original.player().type()):null;
+            Equipment reward=won?Equipment.regionalDrop(new Random(),member.original.player().level(),true,member.original.player().type(),Area.WHISPERING_WOODS):null;
             int used=Math.min(3,member.original.player().potions())-member.potions;
             if(won)party.rewards.add(new CoopDungeon.Reward(member.original.player().name(),party.xpReward(),party.coinReward(),reward,stored.inventory().size()>=30?reward.value():0));
             game.returnFromCoop(member.health,member.resource,used,party.xpReward(),party.coinReward(),reward,won);
@@ -56,6 +56,6 @@ public class CoopController {
             if(won)party.say(member.original.player().name()+" found "+reward.name()+" ("+reward.rarity().name().toLowerCase(Locale.ROOT)+").");
         }
     }
-    private Map<String,Object> view(String id,CoopDungeon p,String user){Map<String,Object> out=new LinkedHashMap<>();out.put("joined",true);out.put("id",id);out.put("state",p.state);out.put("host",user.equals(p.leader));out.put("round",p.round);out.put("rescuesUsed",p.rescuesUsed);out.put("deadline",p.deadline);out.put("serverTime",System.currentTimeMillis());out.put("log",p.log);out.put("rewards",p.rewards);out.put("enemy",Map.of("name","Rootbound Warden","health",p.enemyHealth,"maxHealth",p.enemyMaxHealth,"intent",p.intent()));
+    private Map<String,Object> view(String id,CoopDungeon p,String user){Map<String,Object> out=new LinkedHashMap<>();out.put("joined",true);out.put("id",id);out.put("state",p.state);out.put("host",user.equals(p.leader));out.put("round",p.round);out.put("rescuesUsed",p.rescuesUsed);out.put("duoUnlocked",p.duoUnlocked);out.put("duoUsed",p.duoUsed);out.put("deadline",p.deadline);out.put("serverTime",System.currentTimeMillis());out.put("log",p.log);out.put("rewards",p.rewards);out.put("enemy",Map.of("name","Rootbound Warden","health",p.enemyHealth,"maxHealth",p.enemyMaxHealth,"intent",p.intent()));
         out.put("members",p.members.stream().map(m->{Player player=m.player();Map<String,Object> row=new LinkedHashMap<>();row.put("name",player.getName());row.put("type",player.getPlayerClass());row.put("level",player.getLevel());row.put("health",m.health);row.put("maxHealth",player.getMaxHealth());row.put("resource",m.resource);row.put("maxResource",player.getMaxResource());row.put("potions",m.potions);row.put("you",m.username.equals(user));row.put("ready",m.action!=null);row.put("action",m.action==null?"":m.action);row.put("abilities",player.getAvailableAbilities().stream().map(a->Map.of("id",a.id(),"name",a.name(),"cost",a.cost(),"cooldown",m.cooldowns.getOrDefault(a.id(),0))).toList());return row;}).toList());return out;}
 }

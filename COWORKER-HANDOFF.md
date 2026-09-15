@@ -1,3 +1,9 @@
+# Latest update
+
+The social release adds private two-player guilds, a shared house with three upgrades, decorations, pooled contributions, trophies, bond milestones/Rally, memories and preset reactions. Region-specific drops now cap early equipment and reduce epic availability. See SOCIAL-RELEASE.md for the current implementation and release requirements; SHARE-SUMMARY.md is the short summary.
+
+The user reduced scope due to 30% remaining usage. Friendly PvP, a second town, multi-room adventure, expanded combat visuals/combos, world events and legendary armour remain pending. Older status below is historical and superseded by the social release.
+
 # Wayfarer — development handoff
 
 Prepared September 15, 2026. This is a small Java/Spring Boot RPG intended primarily for two players. The goal is meaningful cooperation and short enjoyable sessions, rather than repetitive attack clicking.

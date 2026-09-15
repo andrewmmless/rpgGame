@@ -60,5 +60,25 @@ with tempfile.TemporaryDirectory(prefix='wayfarer-coop-') as tmp:
         assert saves==[c.request('/api/export') for c in [a,b]],'Completed run must not reward twice'
         move(a,party,'leave');move(b,party,'leave')
         state=a.request('/api/game');a.request('/api/command',dict(version=state['version'],action='rest',value=''))
+        guild=a.request('/api/social',dict(version=0,action='create',value='Willow Watch'))
+        assert guild['members']==['party_one'] and guild['upgrade']==0
+        def social(c,g,action,value='',expect=200):return c.request('/api/social',dict(version=g['version'],action=action,value=value),expect=expect)
+        guild=b.request('/api/social',dict(version=0,action='join',value=guild['invite']))
+        assert len(guild['members'])==2
+        before=a.request('/api/export');guild=social(a,guild,'donate','10')
+        assert guild['coins']==10 and a.request('/api/export')['player']['coins']==before['player']['coins']-10
+        social(a,dict(version=guild['version']-1),'donate','10',expect=409)
+        social(b,guild,'buy','warden_trophy',expect=400)
+        social(b,guild,'upgrade',expect=400)
+        guild=social(b,guild,'react','thanks');assert len(guild['guestbook'])==1
+        social(b,guild,'react','thanks',expect=400)
+        guild=social(a,guild,'place','camp_lantern');assert guild['placed']['hearth']=='camp_lantern'
+        assert guild['bond']['clears']==1 and len(guild['bond']['memories'])==1
+        outsider=Client(base);outsider.token();outsider.request('/api/register',dict(username='outsider',password=password),expect=201);outsider.login('outsider',password)
+        outsider.request('/api/social',dict(version=guild['version'],action='place',value='camp_lantern'),expect=400)
+        before_restart=a.request('/api/social')
+        p.terminate();p.wait(timeout=15);p=start();a=Client(base);a.login('party_one',password)
+        assert a.request('/api/social')==before_restart,'House, membership and bond must survive restart'
+        print('Social check passed: guild join, shared wallet, stale request rejection, decoration gates, reactions, bond credit, outsider denial and restart persistence.')
         print('Co-op check passed: two accounts, simultaneous moves, solo lock, pending-round restart, victory, one reward each, duplicate rejection, return to solo.')
     finally:p.terminate();p.wait(timeout=15)

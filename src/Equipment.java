@@ -26,13 +26,18 @@ public record Equipment(String id, String name, Slot slot, Rarity rarity, int le
             case ROGUE -> new String[]{"Iron Daggers","Nightsteel Daggers","Whisperfangs"};
         };return names[rarity.ordinal()];
     }
+    public static Equipment regionalDrop(Random random,int playerLevel,boolean boss,PlayerClass type,Area area){
+        int level=Math.max(area.getMinLevel(),Math.min(area.getMaxLevel(),playerLevel));Equipment base=drop(random,level,boss,type);
+        String prefix=switch(area){case WHISPERING_WOODS->"Woodland";case STONEFANG_CAVES->"Stonefang";case FORGOTTEN_RUINS->"Relic";case DRAGONS_SPIRE->"Stormforged";};
+        return new Equipment(base.id(),prefix+" "+base.name(),base.slot(),base.rarity(),level,base.power(),base.upgrades(),base.attribute());
+    }
     public static Equipment drop(Random random, int level, boolean boss) {
         return drop(random,level,boss,PlayerClass.WARRIOR);
     }
     public static Equipment drop(Random random,int level,boolean boss,PlayerClass type) {
         Slot slot = random.nextBoolean() ? Slot.WEAPON : Slot.ARMOUR;
         int roll = random.nextInt(100);
-        Rarity rarity = boss ? (roll < 30 ? Rarity.EPIC : Rarity.RARE) : roll < 8 ? Rarity.EPIC : roll < 35 ? Rarity.RARE : Rarity.COMMON;
+        Rarity rarity = boss ? (level>=10 && roll<8 ? Rarity.EPIC : Rarity.RARE) : level>=10&&roll<2 ? Rarity.EPIC : level>=5&&roll<22 ? Rarity.RARE : Rarity.COMMON;
         String[] armour = {"Traveler's Coat", "Warden's Mail", "Dragonscale Mantle"};
         String name = slot == Slot.WEAPON ? weaponName(type,rarity) : armour[rarity.ordinal()];
         WeaponAttribute attribute=slot==Slot.WEAPON&&rarity!=Rarity.COMMON?WeaponAttribute.values()[1+random.nextInt(3)]:WeaponAttribute.NONE;

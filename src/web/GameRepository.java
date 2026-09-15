@@ -70,6 +70,7 @@ public class GameRepository {
     }
     public Map<String,Object> command(String user,long expectedVersion,String action,String value) {
         return transactions.execute(status -> {
+            SocialStore.lock(jdbc);
             jdbc.queryForList("SELECT username FROM hearthglen.rpg_saves WHERE username=? FOR UPDATE",user);
             int active=jdbc.queryForObject("SELECT COUNT(*) FROM hearthglen.rpg_coop_members m JOIN hearthglen.rpg_coop p ON p.id=m.party_id WHERE m.username=? AND p.active=TRUE",Integer.class,user);
             if(active>0)throw new IllegalArgumentException("Leave or finish your co-op party before playing solo.");

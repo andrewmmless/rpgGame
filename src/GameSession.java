@@ -94,7 +94,7 @@ public final class GameSession {
             case "open_chest" -> {
                 inTown();require(availableChests()>0,"Earn a chest by winning three fights, clearing a new region, or clearing a new tower floor.");
                 require(inventory.size()<30,"Make room in your bag before opening a chest.");
-                Equipment reward=Equipment.drop(random,player.getLevel(),true,player.getPlayerClass());
+                Equipment reward=Equipment.regionalDrop(random,player.getLevel(),true,player.getPlayerClass(),Arrays.stream(Area.values()).filter(this::unlocked).reduce((a,b)->b).orElse(Area.WHISPERING_WOODS));
                 inventory.add(reward);claimed.add("chest:"+openedChests());
                 say("Opened a milestone chest: "+reward.name()+" ("+reward.rarity().name().toLowerCase(Locale.ROOT)+").");
             }
@@ -155,7 +155,7 @@ public final class GameSession {
     private Equipment item(String id) { return inventory.stream().filter(i->i.id().equals(id)).findFirst().orElseThrow(()->new IllegalArgumentException("Item not found.")); }
     private void drop(boolean boss) {
         if(!boss && random.nextInt(100)>=55)return;
-        Equipment item=Equipment.drop(random,player.getLevel(),boss,player.getPlayerClass());
+        Equipment item=Equipment.regionalDrop(random,player.getLevel(),boss,player.getPlayerClass(),area);
         if(inventory.size()>=30) {player.addCoins(item.value());say("Pack full: sold "+item.name()+" for "+item.value()+" coins.");}
         else {inventory.add(item);say("Found "+item.rarity().name().toLowerCase(Locale.ROOT)+" "+item.name()+". Equip it when you return to town.");}
     }
@@ -208,7 +208,7 @@ public final class GameSession {
         view.put("player",Map.ofEntries(Map.entry("name",player.getName()),Map.entry("type",player.getPlayerClass()),Map.entry("level",player.getLevel()),Map.entry("xp",player.getXp()),Map.entry("nextXp",player.getXpToNextLevel()),Map.entry("health",player.getHealth()),Map.entry("maxHealth",player.getMaxHealth()),Map.entry("resource",player.getResource()),Map.entry("maxResource",player.getMaxResource()),Map.entry("coins",player.getCoins()),Map.entry("potions",player.getPotions()),Map.entry("attack",player.getAttackPower()),Map.entry("defence",player.getDefence()),Map.entry("statuses",player.getStatuses())));
         view.put("mode",mode);view.put("area",area);view.put("room",room);view.put("towerFloor",towerFloor);view.put("towerBest",towerBest);
         view.put("kills",kills);view.put("deaths",deaths);view.put("log",List.copyOf(log));view.put("cleared",Set.copyOf(cleared));view.put("claimed",Set.copyOf(claimed));
-        view.put("chests",availableChests());view.put("shopPrice",20+player.getLevel()*6);
+        view.put("chests",availableChests());view.put("chestEpicChance",Arrays.stream(Area.values()).filter(this::unlocked).anyMatch(a->a.getMinLevel()>=10)?8:0);view.put("shopPrice",20+player.getLevel()*6);
         view.put("inventory",inventory.stream().map(i->Map.of("item",i,"equipped",i.id().equals(equipped.get(i.slot())),"value",i.value(),"upgradeCost",i.upgradeCost(),"attributeDescription",i.attribute().description(),"protected",claimed.contains("keep:"+i.id()))).toList());
         view.put("regions",Campaign.REGIONS.stream().map(r->Map.of("id",r.area(),"name",r.area().getDisplayName(),"subtitle",r.subtitle(),"story",r.story(),"boss",r.boss(),"quest",r.quest(),"minLevel",r.area().getMinLevel(),"maxLevel",r.area().getMaxLevel(),"unlocked",unlocked(r.area()))).toList());
         view.put("abilities",player.getAbilities().stream().map(a->Map.of("id",a.id(),"name",a.name(),"cost",a.cost(),"unlockLevel",a.unlockLevel(),"cooldown",combat==null?0:combat.getCooldown(a.id()),"baseCooldown",a.cooldown())).toList());

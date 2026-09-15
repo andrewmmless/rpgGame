@@ -6,6 +6,7 @@ public class CoopDungeon {
     public int round,enemyHealth,enemyMaxHealth,level;
     public long deadline;
     public int rescuesUsed;
+    public boolean duoUnlocked,duoUsed;
     public record Reward(String name,int xp,int coins,Equipment item,int convertedCoins) {}
     public List<Reward> rewards=new ArrayList<>();
     public List<Member> members=new ArrayList<>();
@@ -29,7 +30,7 @@ public class CoopDungeon {
     public String intent(){String target=members.size()<2?"your party":members.get(round%2).original.player().name();return round%3==2?"Heavy strike against "+target+" — defend or have your partner protect you.":round%3==1?"Root sweep hits both players.":"Strike against "+target+".";}
     public void choose(String user,int expectedRound,String action,long now,Random random){require(state.equals("BATTLE")&&round==expectedRound,"The round has changed. Refresh your party.");Member member=members.stream().filter(m->m.username.equals(user)).findFirst().orElseThrow();require(member.action==null,"Your move is already locked in.");validate(member,action);member.action=action;if(members.stream().allMatch(m->m.action!=null))resolve(now,random);}
     public void cover(int expectedRound,long now,Random random){require(state.equals("BATTLE")&&round==expectedRound,"The round has changed.");require(now>=deadline,"Give your partner a minute to choose.");require(members.stream().anyMatch(m->m.action!=null),"Choose your own move first.");for(Member m:members)if(m.action==null)m.action="DEFEND";say("The missing move defaults to defend.");resolve(now,random);}
-    private void validate(Member m,String action){require(action!=null,"Choose a move.");Player p=m.player();if(action.startsWith("ability:")){Ability a=p.getAvailableAbilities().stream().filter(x->x.id().equals(action.substring(8))).findFirst().orElse(null);require(a!=null&&m.cooldowns.getOrDefault(a.id(),0)==0&&p.getResource()>=a.cost(),"Ability unavailable or insufficient resource.");}else{require(Set.of("ATTACK","DEFEND","PROTECT","MEND","POTION").contains(action),"Unknown party move.");if(action.equals("MEND"))require(p.getResource()>=12,"Mend needs 12 resource.");if(action.equals("POTION"))require(p.getPotions()>0&&p.getHealth()<p.getMaxHealth(),"No potion needed or available.");}}
+    private void validate(Member m,String action){require(action!=null,"Choose a move.");Player p=m.player();if(action.startsWith("ability:")){Ability a=p.getAvailableAbilities().stream().filter(x->x.id().equals(action.substring(8))).findFirst().orElse(null);require(a!=null&&m.cooldowns.getOrDefault(a.id(),0)==0&&p.getResource()>=a.cost(),"Ability unavailable or insufficient resource.");}else{require(Set.of("ATTACK","DEFEND","PROTECT","MEND","POTION","RALLY").contains(action),"Unknown party move.");if(action.equals("RALLY"))require(duoUnlocked&&!duoUsed,"Rally requires bond milestone 3 and can be used once per run.");if(action.equals("MEND"))require(p.getResource()>=12,"Mend needs 12 resource.");if(action.equals("POTION"))require(p.getPotions()>0&&p.getHealth()<p.getMaxHealth(),"No potion needed or available.");}}
     private void resolve(long now,Random random){
         Player[] players=members.stream().map(Member::player).toArray(Player[]::new);
         Enemy enemy=new Enemy("Rootbound Warden",level,enemyMaxHealth,16+3*(level-1),5+level,0,0,0,0);enemy.restoreHealth(enemyHealth);enemy.restoreStatuses(enemyStatuses);
@@ -41,6 +42,7 @@ public class CoopDungeon {
                 case "ATTACK" -> {if(!enemy.isDead())say(p.getName()+" strikes for "+enemy.receiveDamage(p.rollDamage(random,-2,2),DamageType.PHYSICAL)+".");}
                 case "DEFEND","PROTECT" -> {kind=CombatAction.DEFEND;say(p.getName()+(action.equals("PROTECT")?" protects their partner.":" defends."));}
                 case "MEND" -> {kind=CombatAction.ABILITY;p.spendResource(12);Player partner=players[1-i];int hp=partner.getHealth();partner.heal(Math.max(10,partner.getMaxHealth()/5));say(p.getName()+" mends "+partner.getName()+" for "+(partner.getHealth()-hp)+" health.");}
+                case "RALLY" -> {kind=CombatAction.DEFEND;if(!duoUsed){duoUsed=true;for(Player partner:players){partner.heal(Math.max(1,partner.getMaxHealth()/10));partner.restoreResource(6);}say("Together: Rally restores 10% health and 6 resource to both partners.");}else say(p.getName()+" supports the rally.");}
                 case "POTION" -> {kind=CombatAction.POTION;p.usePotion();say(p.getName()+" drinks a potion.");}
                 default -> {kind=CombatAction.ABILITY;Ability a=p.getAvailableAbilities().stream().filter(x->x.id().equals(action.substring(8))).findFirst().orElseThrow();p.spendResource(a.cost());if(!enemy.isDead())a.effect().apply(p,enemy,random,effects);m.cooldowns.put(a.id(),a.cooldown());}
             }
@@ -57,7 +59,7 @@ public class CoopDungeon {
             if(Arrays.stream(players).filter(Player::isDead).count()==1&&rescuesUsed==0){state="RESCUE";deadline=now+60000;say("A partner is down! The survivor has one minute to rescue them. One rescue per run.");}
             else{state="DEFEAT";say("Your party fell. The wardens return you to town without clear rewards.");}
         }
-        else if(enemy.isDead()){state="VICTORY";say("The Warden falls! Each player earns an individual rare-or-epic item, "+xpReward()+" XP and "+coinReward()+" coins.");}
+        else if(enemy.isDead()){state="VICTORY";say("The Warden falls! Each player earns an individual rare Woodland item, "+xpReward()+" XP and "+coinReward()+" coins.");}
     }
     public void rescue(String user,long now){
         require(state.equals("RESCUE"),"No rescue is pending.");

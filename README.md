@@ -67,3 +67,6 @@ Equipment now supports selecting multiple unequipped items for a reviewed, atomi
 One single-player knockdown per co-op run opens a 60-second rescue window. The survivor can revive their partner at 35% health. A later knockdown, both players falling, or an expired rescue ends the run. Rescue pauses are persisted and keep the normal character locked to the party. Mark equipment as protected to exclude it from individual and bulk selling; unprotect it explicitly to sell.
 
 See COWORKER-HANDOFF.md for release steps and verification limits, and ROADMAP.md for the active development plan.
+
+## Social release
+Guilds, shared housing/furnishings, bond milestones/Rally, shared memories and region-tier loot are now implemented. See SOCIAL-RELEASE.md for exact limits, changed drop rates, tests and pending features. SHARE-SUMMARY.md is the short shareable status.
