@@ -10,9 +10,11 @@ class RouteRewardTest {
         Player p=new Mage("Route");p.setLevel(10);p.setHealth(p.getMaxHealth());
         GameSession game=new GameSession(p,new Random(1));game.command("adventure","WHISPERING_WOODS:0");
         game=finishing(game.snapshot());game.command("combat","ATTACK");
+        while(game.snapshot().mode().equals("OBJECTIVE"))game.command("objective","");
         assertEquals(152,game.snapshot().player().xp());assertTrue(game.snapshot().cleared().isEmpty());
         assertTrue(game.snapshot().inventory().stream().allMatch(i->i.level()<=5&&i.rarity()!=Equipment.Rarity.EPIC));
         game=finishing(game.snapshot());game.command("combat","ATTACK");
+        while(game.snapshot().mode().equals("OBJECTIVE"))game.command("objective","");
         assertEquals(204,game.snapshot().player().xp());
         game.command("town","");game.command("adventure","WHISPERING_WOODS:1");
         assertEquals("Hollow Reach",((Map<?,?>)game.view().get("route")).get("name"));

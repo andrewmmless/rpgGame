@@ -2,7 +2,7 @@ import java.util.*;
 
 /** UI-independent campaign state machine, shared by the browser and future adapters. */
 public final class GameSession {
-    public enum Mode { TOWN, TRAIL, COMBAT, SHRINE, COMPLETE, DEFEAT }
+    public enum Mode { TOWN, TRAIL, COMBAT, SHRINE, OBJECTIVE, COMPLETE, DEFEAT }
     private final Player player;
     private final Random random;
     private Mode mode=Mode.TOWN;
@@ -31,11 +31,22 @@ public final class GameSession {
         int level=Math.max(route.minLevel(),Math.min(route.maxLevel(),player.getLevel()));
         return Equipment.regionalDrop(random,level,boss,player.getPlayerClass(),route.area());
     }
+    private boolean missionActive(){return route()!=null&&claimed.contains("mission:enabled");}
+    private int missionValue(String key,int fallback){String prefix="mission:"+key+":";return claimed.stream().filter(f->f.startsWith(prefix)).mapToInt(f->Integer.parseInt(f.substring(prefix.length()))).findFirst().orElse(fallback);}
+    private void setMissionValue(String key,int value){String prefix="mission:"+key+":";claimed.removeIf(f->f.startsWith(prefix));claimed.add(prefix+value);}
+    private void workObjective(){
+        require(missionActive()&&(mode==Mode.COMBAT||mode==Mode.OBJECTIVE),"No mission objective here.");
+        if(mode==Mode.COMBAT){fight("OBJECTIVE");return;}
+        setMissionValue("work",Math.min(2,missionValue("work",0)+1));say("The company secures the site: "+missionValue("work",0)+"/2.");
+        if(missionValue("work",0)==2)finishRoom();
+    }
     public void command(String action,String value) {
         require(action!=null,"Choose an action.");
         if (value == null) value = "";
         switch(action) {
             case "gather","sell_material" -> {inTown();String[] parts=value.split(":");require(parts.length==2,"Choose a gathering site.");Gathering profession=Gathering.valueOf(parts[0]);int tier=Integer.parseInt(parts[1]);say(action.equals("gather")?profession.gather(tier,player,claimed,cleared,random):profession.sell(tier,player,claimed));}
+            case "craft" -> {inTown();Equipment item=Crafting.craft(value,player,claimed,cleared,inventory.size());if(item!=null)inventory.add(item);say("Crafted "+Crafting.recipe(value).name()+".");}
+            case "objective" -> workObjective();
             case "story" -> {inTown();say(StoryPath.speak(value,claimed,cleared));}
             case "adventure" -> {
                 inTown();String[] choice=value.split(":",-1);Area target=Area.valueOf(choice[0]);
@@ -44,6 +55,7 @@ public final class GameSession {
                 require(path.area()==target&&path.unlocked(claimed,cleared),"Complete the preceding story route first.");
                 require(!player.isDead(),"Rest before departing.");
                 claimed.removeIf(f->f.startsWith("route:active:"));claimed.add("route:active:"+index);
+                claimed.removeIf(f->f.startsWith("mission:"));claimed.add("mission:enabled");setMissionValue("integrity",100);
                 area=target;room=0;towerFloor=0;mode=Mode.TRAIL;
                 say(path.complete(claimed,cleared)?"Patrol: "+path.name()+". Keep the route safe and gather equipment.":path.captain()+": "+path.opening());
             }
@@ -57,7 +69,7 @@ public final class GameSession {
                 if(room==2) { mode=Mode.SHRINE; say("A spring bubbles beside an abandoned supply cache. Choose one before moving on."); }
                 else {
                     enemy=route()==null?Campaign.encounter(area,player.getLevel(),room==4,random,towerFloor):route().encounter(room,player.getLevel(),random);
-                    combat=new CombatEngine(player,enemy,random);mode=Mode.COMBAT;
+                    combat=new CombatEngine(player,enemy,random);mode=Mode.COMBAT;if(missionActive())setMissionValue("work",0);
                     say("Encountered "+enemy.getName()+" (level "+enemy.getLevel()+").");
                 }
             }
@@ -140,12 +152,40 @@ public final class GameSession {
         String id=null;
         if(value!=null && value.startsWith("ability:")) {action=CombatAction.ABILITY;id=value.substring(8);}
         else action=CombatAction.valueOf(Objects.requireNonNull(value));
+        boolean work=action==CombatAction.OBJECTIVE;
+        require(!work||missionActive(),"No mission objective here.");
+        boolean able=!player.hasStatus(StatusEffect.Kind.STUN);
+        if(work&&able&&MissionObjective.forRoute(route().index())==MissionObjective.SEAL)player.applyStatus(new StatusEffect("ward_cover",StatusEffect.Kind.GUARD,0,2));
         CombatResult result=combat.performAction(action,id);
         require(result.accepted(),String.join(" ",result.events()));
         result.events().forEach(this::say);
+        if(missionActive()&&result.outcome()!=CombatResult.Outcome.FLED){
+            if(work&&able){setMissionValue("work",Math.min(2,missionValue("work",0)+1));say("Mission work "+missionValue("work",0)+"/2.");}
+            if(MissionObjective.forRoute(route().index())==MissionObjective.ESCORT){int integrity=missionValue("integrity",100);setMissionValue("integrity",Math.max(0,Math.min(100,integrity+(work&&able?15:-5))));}
+            if(missionValue("integrity",100)==0){if(player.isDead())applyDeathPenalty();mode=Mode.DEFEAT;combat=null;say("The convoy was lost. Your existing progress and gear are safe; regroup and try again.");return;}
+        }
         switch(result.outcome()) {
             case VICTORY -> {
                 kills++;drop(enemy.isBoss());
+                if(missionActive()&&missionValue("work",0)<2){mode=Mode.OBJECTIVE;say("Enemy defeated. Secure the mission site before advancing.");}
+                else finishRoom();
+                combat=null;
+            }
+            case DEFEAT -> {
+                applyDeathPenalty();mode=Mode.DEFEAT;combat=null;
+            }
+            case FLED -> { mode=Mode.TOWN;combat=null;towerFloor=0;say("The expedition ends. Rest at the inn before trying again."); }
+            default -> { }
+        }
+    }
+    private void applyDeathPenalty(){
+        deaths++;int tier=highestRoute().area().ordinal(),percent=15+5*tier;
+        int xpLoss=(player.getXp()*percent+99)/100,coinLoss=(int)(((long)player.getCoins()*(10+5*tier)+99)/100);
+        player.setXp(player.getXp()-xpLoss);player.spendCoins(coinLoss);
+        int materialsLost=0;for(Gathering g:Gathering.values())for(int i=0;i<3;i++){int owned=g.owned(claimed,i);int loss=owned*(5+5*tier)/100;if(loss>0){g.consume(claimed,i,loss);materialsLost+=loss;}}
+        say("Defeat: lost "+xpLoss+" current-level XP, "+coinLoss+" coins and "+materialsLost+" gathered materials. Your level and equipment are preserved.");
+    }
+    private void finishRoom(){
                 if(room==4) {
                     if(towerFloor>0) {towerBest=Math.max(towerBest,towerFloor);say("Tower floor "+towerFloor+" cleared. A harder floor awaits.");}
                     else if(route()!=null) {
@@ -158,15 +198,6 @@ public final class GameSession {
                     else {cleared.add(area.name());say("Region complete. Your existing expedition progress has been preserved.");}
                     mode=Mode.COMPLETE;room=5;
                 } else { room++;mode=Mode.TRAIL; }
-                combat=null;
-            }
-            case DEFEAT -> {
-                deaths++;int lost=player.getCoins()/10;player.spendCoins(lost);
-                mode=Mode.DEFEAT;combat=null;say("You fell in battle and lost "+lost+" coins. The wardens can rescue you; your save is safe.");
-            }
-            case FLED -> { mode=Mode.TOWN;combat=null;towerFloor=0;say("The expedition ends. Rest at the inn before trying again."); }
-            default -> { }
-        }
     }
     private int openedChests() { return (int)claimed.stream().filter(id->id.startsWith("chest:")).count(); }
     private int availableChests() { return Math.max(0,(kills>=3?1:0)+cleared.size()+towerBest-openedChests()); }
@@ -198,7 +229,7 @@ public final class GameSession {
         claimed.add(id);player.gainXp(xp);player.addCoins(coins);say("Quest reward: +"+xp+" XP and +"+coins+" coins.");
     }
     public void returnFromCoop(int health,int resource,int potionsUsed,int xp,int coins,Equipment reward,boolean won) {
-        inTown();player.setHealth(Math.max(1,health));player.setResource(resource);player.setPotions(Math.max(0,player.getPotions()-potionsUsed));
+        inTown();if(health<=0)applyDeathPenalty();player.setHealth(Math.max(1,health));player.setResource(resource);player.setPotions(Math.max(0,player.getPotions()-potionsUsed));
         if(won){player.gainXp(xp);player.addCoins(coins);kills++;if(inventory.size()<30)inventory.add(reward);else{player.addCoins(reward.value());say("Co-op reward sold because your bag was full.");}say("Co-op dungeon cleared: +"+xp+" XP, +"+coins+" coins and "+reward.name()+".");}
         else say("Returned from the co-op dungeon. Rest before another expedition.");
     }
@@ -234,7 +265,10 @@ public final class GameSession {
     public Map<String,Object> view() {
         Map<String,Object> view=new LinkedHashMap<>();
         view.put("player",Map.ofEntries(Map.entry("name",player.getName()),Map.entry("type",player.getPlayerClass()),Map.entry("rank",WorldNames.rank(player.getPlayerClass(),cleared)),Map.entry("title",cleared.contains(Area.DRAGONS_SPIRE.name())?"Dragonbane":""),Map.entry("level",player.getLevel()),Map.entry("xp",player.getXp()),Map.entry("nextXp",player.getXpToNextLevel()),Map.entry("health",player.getHealth()),Map.entry("maxHealth",player.getMaxHealth()),Map.entry("resource",player.getResource()),Map.entry("maxResource",player.getMaxResource()),Map.entry("coins",player.getCoins()),Map.entry("potions",player.getPotions()),Map.entry("attack",player.getAttackPower()),Map.entry("defence",player.getDefence()),Map.entry("statuses",player.getStatuses())));
+        view.put("deathPenalty",Map.of("xpPercent",15+5*highestRoute().area().ordinal(),"coinPercent",10+5*highestRoute().area().ordinal(),"materialPercent",5+5*highestRoute().area().ordinal()));
+        view.put("recipes",Crafting.view(player,claimed,cleared));
         view.put("gathering",Arrays.stream(Gathering.values()).map(g->g.view(claimed,cleared)).toList());
+        if(missionActive()&&Set.of(Mode.COMBAT,Mode.OBJECTIVE).contains(mode)){MissionObjective objective=MissionObjective.forRoute(route().index());view.put("missionObjective",Map.of("title",objective.title,"action",objective.action,"progress",missionValue("work",0),"integrity",missionValue("integrity",100),"escort",objective==MissionObjective.ESCORT,"help",objective==MissionObjective.ESCORT?"Escort twice per encounter. Each escort restores 15 integrity; other turns cost 5. Work takes your combat turn.":objective==MissionObjective.SEAL?"Disrupt twice per encounter. Disrupting halves incoming damage that turn, but deals no damage.":"Search twice per encounter. Searching takes your turn while the enemy can attack. Finish searching after battle if needed."));}
         view.put("story",StoryPath.view(claimed,cleared));
         view.put("routes",SubArea.ALL.stream().map(r->Map.of("index",r.index(),"area",r.area(),"name",r.name(),"minLevel",r.minLevel(),"maxLevel",r.maxLevel(),"mission",r.mission(),"unlocked",r.unlocked(claimed,cleared),"complete",r.complete(claimed,cleared))).toList());
         if(route()!=null)view.put("route",Map.of("name",route().name(),"mission",route().mission(),"opening",route().opening(),"ending",route().ending(),"guardian",route().guardian()));

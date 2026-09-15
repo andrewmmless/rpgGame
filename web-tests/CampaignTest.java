@@ -15,6 +15,7 @@ class CampaignTest {
             while(!game.snapshot().mode().equals("COMPLETE")&&limit++<100) {
                 switch(game.snapshot().mode()) {
                     case "TRAIL" -> game.command("continue","");
+                    case "OBJECTIVE" -> game.command("objective","");
                     case "SHRINE" -> game.command("spring","");
                     case "COMBAT" -> game.command("combat","ATTACK");
                     default -> fail("Unexpected mode "+game.snapshot().mode());
@@ -115,6 +116,7 @@ class CampaignTest {
             while(!Set.of("COMPLETE","DEFEAT").contains(game.snapshot().mode())&&steps++<120) {
                 switch(game.snapshot().mode()) {
                     case "TRAIL" -> game.command("continue","");
+                    case "OBJECTIVE" -> game.command("objective","");
                     case "SHRINE" -> game.command("spring","");
                     case "COMBAT" -> {
                         GameSave s=game.snapshot();

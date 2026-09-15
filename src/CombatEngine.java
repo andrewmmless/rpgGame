@@ -37,6 +37,7 @@ public final class CombatEngine {
         int healthBeforeAction=enemy.getHealth();
         if(stunned) events.add("You are stunned.");
         else switch(action) {
+            case OBJECTIVE -> events.add("You work on the mission while the enemy advances.");
             case ATTACK -> events.add("Attack dealt "+enemy.receiveDamage(player.rollDamage(random,-2,2),DamageType.PHYSICAL)+" damage.");
             case ABILITY -> {player.spendResource(ability.cost());ability.effect().apply(player,enemy,random,events);cooldowns.put(ability.id(),ability.cooldown());}
             case DEFEND -> {player.applyStatus(new StatusEffect("guard",StatusEffect.Kind.GUARD,0,2));player.restoreResource(6);events.add("You brace for the next attack and recover 6 resource.");}

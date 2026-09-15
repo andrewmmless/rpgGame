@@ -1,1 +1,1 @@
-public enum CombatAction { ATTACK, ABILITY, DEFEND, POTION, FLEE }
+public enum CombatAction { ATTACK, ABILITY, DEFEND, POTION, FLEE, OBJECTIVE }

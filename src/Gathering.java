@@ -10,6 +10,8 @@ public enum Gathering {
     private String key(String kind){return "gather:"+name()+":"+kind+":";}
     private int number(Set<String> flags,String kind){String prefix=key(kind);return flags.stream().filter(f->f.startsWith(prefix)).mapToInt(f->Integer.parseInt(f.substring(prefix.length()))).findFirst().orElse(0);}
     private void put(Set<String> flags,String kind,int value){String prefix=key(kind);flags.removeIf(f->f.startsWith(prefix));flags.add(prefix+value);}
+    public int owned(Set<String> flags,int tier){return number(flags,"item"+tier);}
+    public void consume(Set<String> flags,int tier,int amount){CoopDungeon.require(amount>=0&&owned(flags,tier)>=amount,"Not enough materials.");put(flags,"item"+tier,owned(flags,tier)-amount);}
     public int level(Set<String> flags){return 1+number(flags,"xp")/100;}
     private boolean open(int tier,Set<String> flags,Set<String> cleared){return SubArea.get(route+tier).unlocked(flags,cleared)&&level(flags)>=1+tier*3;}
     public Map<String,Object> view(Set<String> flags,Set<String> cleared){

@@ -187,3 +187,5 @@ See WAYFARER-HANDOFF.md for the complete current-state inventory and remaining w
 
 ### Shared story and world-map checkpoint
 All twelve routes now support three-stage two-player missions with escort, investigation or ward-disruption objectives and individual persistent story progression. The central capital contains services, guild hall and dungeon lodge; gathering sites have basic skill/material progression. Guilds now hold eight members while dungeon parties remain two. See WAYFARER-HANDOFF.md for full mechanics and verification. Future kingdoms, wars and local conflicts are recorded for later, not implemented now.
+
+Solo mission objectives, four forge recipes and story-scaled XP/coin/material death penalties are now implemented. See WAYFARER-HANDOFF.md for exact mechanics and remaining scope.

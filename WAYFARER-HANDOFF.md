@@ -110,3 +110,12 @@ Branch into other kingdoms with their own goals, wars, monster threats and local
 
 ### Remaining priority
 Solo mission-objective parity, richer investigation/escort interactions, class builds and promotion mechanics, legendary/crafting goals, profession-specific minigames, more visual variety and targeted balance from player feedback. Larger-party raids, guild ownership transfer and rival duels remain unbuilt.
+
+## Solo objectives, crafting and death-penalty checkpoint
+
+- New solo expeditions use the shared mission themes. Each combat site requires two objective actions. Escort actions restore supply integrity; ignoring the convoy can fail the expedition. Ward disruption halves damage for that turn. Searches take the player's turn without attacking. If enemies are defeated first, remaining site work is completed before progression. Saved progress survives reload. Legacy active expeditions without mission flags can finish normally.
+- Iven's forge now offers four deterministic recipes: reinforced trail coat, Piercing ironwood class weapon, Focus wardbound class weapon and two field potions. Recipes show costs/results and require character level plus the appropriate story route. Materials, coins and capacity are checked before spending. Legendary equipment is still unbuilt.
+- Death now costs 15/20/25/30 percent of current-level XP, 10/15/20/25 percent of coins and 5/10/15/20 percent of each gathered material stack, according to the highest opened region. XP/coin losses round up; material losses round down. No deleveling or equipment destruction. Exact losses are recorded in Recent events.
+- Co-op applies that penalty only to characters still fallen when the run ends. A successfully rescued character does not receive it. A living character who loses the convoy does not receive a death penalty. Failed missions still award no story clear.
+- Full build and 32 tests passed, including objective turn cost/persistence, convoy failure without progression, atomic crafting, no free repeat crafting and individual co-op death losses. No repeated long-duration simulations were run.
+- Remaining: richer investigation choices, more crafting recipes, subclass/attribute/loadout choices, legendary goals, varied enemy art, guild leadership tools and long-term economy tuning. Future kingdoms remain deferred.
