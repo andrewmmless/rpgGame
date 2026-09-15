@@ -17,7 +17,7 @@ public final class GameSession {
 
     public GameSession(Player player, Random random) {
         this.player=Objects.requireNonNull(player); this.random=Objects.requireNonNull(random);
-        say("Welcome to Hearthglen, "+player.getName()+". Choose Whispering Woods to begin your first expedition.");
+        say("Welcome to Hearthglen in Cindergard, "+player.getName()+". Choose Whispering Woods to begin your first expedition.");
     }
     private void say(String text) { log.add(text); while(log.size()>40)log.remove(0); }
     private void require(boolean condition,String message) { if(!condition)throw new IllegalArgumentException(message); }
@@ -207,7 +207,7 @@ public final class GameSession {
     }
     public Map<String,Object> view() {
         Map<String,Object> view=new LinkedHashMap<>();
-        view.put("player",Map.ofEntries(Map.entry("name",player.getName()),Map.entry("type",player.getPlayerClass()),Map.entry("level",player.getLevel()),Map.entry("xp",player.getXp()),Map.entry("nextXp",player.getXpToNextLevel()),Map.entry("health",player.getHealth()),Map.entry("maxHealth",player.getMaxHealth()),Map.entry("resource",player.getResource()),Map.entry("maxResource",player.getMaxResource()),Map.entry("coins",player.getCoins()),Map.entry("potions",player.getPotions()),Map.entry("attack",player.getAttackPower()),Map.entry("defence",player.getDefence()),Map.entry("statuses",player.getStatuses())));
+        view.put("player",Map.ofEntries(Map.entry("name",player.getName()),Map.entry("type",player.getPlayerClass()),Map.entry("rank",WorldNames.rank(player.getPlayerClass(),cleared)),Map.entry("title",cleared.contains(Area.DRAGONS_SPIRE.name())?"Dragonbane":""),Map.entry("level",player.getLevel()),Map.entry("xp",player.getXp()),Map.entry("nextXp",player.getXpToNextLevel()),Map.entry("health",player.getHealth()),Map.entry("maxHealth",player.getMaxHealth()),Map.entry("resource",player.getResource()),Map.entry("maxResource",player.getMaxResource()),Map.entry("coins",player.getCoins()),Map.entry("potions",player.getPotions()),Map.entry("attack",player.getAttackPower()),Map.entry("defence",player.getDefence()),Map.entry("statuses",player.getStatuses())));
         view.put("mode",mode);view.put("area",area);view.put("room",room);view.put("towerFloor",towerFloor);view.put("towerBest",towerBest);
         view.put("kills",kills);view.put("deaths",deaths);view.put("log",List.copyOf(log));view.put("cleared",Set.copyOf(cleared));view.put("claimed",Set.copyOf(claimed));
         view.put("chests",availableChests());view.put("chestEpicChance",Arrays.stream(Area.values()).filter(this::unlocked).anyMatch(a->a.getMinLevel()>=10)?8:0);view.put("shopPrice",20+player.getLevel()*6);

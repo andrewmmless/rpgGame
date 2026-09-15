@@ -166,3 +166,7 @@ Storage: hearthglen.rpg_saves holds the active character, rpg_character_slots ho
 Implemented: level-ups add only the increase in maximum health/resource; XP requirements now grow from 50 using 20 per level plus a small quadratic term; heavy attacks use 2.6x damage and defending restores six extra resource; Tower gear uses player/encounter level instead of the region-25 ceiling; bulk sales gain a rare-item selector and preserve the open panel and page position on redraw. Existing levels and items are unchanged. Existing XP values remain valid, though the percentage toward the next level is lower.
 
 Focused verification: level-up recovery, legacy XP acceptance, defend versus heavy strike, and atomic/protected bulk selling. Balance is an initial tuning pass, not a full playtest. Sub-areas, per-fight auto-attack and deeper enemy patterns remain for the next pass.
+
+### Naming applied
+
+Cindergard appears in the welcome, sign-in description and world screen. Character ranks use the exact class ladders above, derived from consecutive region clears, not level. Dragonbane is a separate title requiring the Dragon's Spire clear. WorldNames centralizes all planned sub-area and gathering names; these names do not yet represent playable new locations. Wayfarer remains the game title and Hearthglen the starting town.
