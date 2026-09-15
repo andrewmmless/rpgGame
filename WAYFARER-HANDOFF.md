@@ -126,3 +126,6 @@ Solo mission-objective parity, richer investigation/escort interactions, class b
 - Leaders can transfer ownership to a current guildmate through a confirmed form. Server checks ownership and membership; the invite rotates on transfer. The former leader can then leave.
 - Fixed a brittle deployment test that compared JSON set ordering; it now compares complete saved-state values instead.
 - Full build and 35 tests passed. Attribute allocation, ability leveling, loadouts, subclass mechanics and legendary rewards remain next larger systems.
+
+### Lightweight equipment-art update
+Seven custom SVG silhouettes replace generic sword/shield artwork: sword, staff, mace/sceptre, paired daggers, coat, mail and plate. Item names select weapon silhouettes with class fallback for older generic names. Equipped slots, backpack, item details, chest reveals and co-op reward cards share the same 2,992-byte SVG sheet. Rarity accents work in both themes. JavaScript syntax and SVG structure checked; game mechanics unchanged.
