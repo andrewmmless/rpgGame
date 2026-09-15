@@ -129,3 +129,17 @@ Solo mission-objective parity, richer investigation/escort interactions, class b
 
 ### Lightweight equipment-art update
 Seven custom SVG silhouettes replace generic sword/shield artwork: sword, staff, mace/sceptre, paired daggers, coat, mail and plate. Item names select weapon silhouettes with class fallback for older generic names. Equipped slots, backpack, item details, chest reveals and co-op reward cards share the same 2,992-byte SVG sheet. Rarity accents work in both themes. JavaScript syntax and SVG structure checked; game mechanics unchanged.
+
+## Character builds release
+
+Implemented two attribute points per level after level one (Power +1 attack, Vitality +4 max health, Armour +1 defence, Focus +2 max resource; 60-point cap each), one training point every three levels, three upgrade ranks per ability, four-slot configurable loadouts, eight specialisations and eight promotion techniques. The original four abilities remain the default loadout for existing characters. First regional clear opens specialisation and a signature technique; Caves clear opens the second new technique.
+
+Ability ranks reduce paid costs by one per rank, add 8% direct damage/healing per rank and +2 recovery per rank for resource-restoring abilities. Status durations are not increased. Free build reset and specialisation changes are capital-only; normal co-op locking prevents mid-party changes. Increased capacity is not a free heal. Saves and co-op player reconstruction use the same build configuration.
+
+Specialisations: Warrior Vanguard (+15% armour/+10% health) or Champion (+12% ability damage); Mage Battle Mage (+12% ability damage) or Spellwarden (+15% armour/+20 resource); Cleric Lightwarden (+20% direct healing) or Inquisitor (+12% ability damage); Rogue Assassin (+12% ability damage) or Pathfinder (+10% health/+20 resource). See the in-game Class & abilities screen for requirements and exact technique descriptions.
+
+Gear: Conduit restores 3 resource after a damaging ability; Vampiric restores 3 health after a damaging basic attack. Added Conduit and Bloodsteel recipes; later drops can roll the new attributes. Existing Focus/Piercing/Siphon items remain valid. No legendary rarity added.
+
+Six mixed-class co-op combinations: Oathkeepers, Dawnfire, Hidden Mercy, Shielded Inferno, Flanking Guard, Smoke and Cinders. Coordinate two abilities or protection plus an ability, with actual damage dealt. Three-round persisted cooldown. Cleric pairs heal, non-Cleric Warrior pairs guard, Mage/Rogue restore resource; all add a small shared strike.
+
+Validation: full Maven package and 41 tests passed; JavaScript syntax passed. The isolated HTTP check now also passed: earned attributes, saved loadout, reconnect persistence, premature specialisation rejection, shared-story restart and duplicate reward rejection. Saved for the rework branch; push and confirm the Render deployment before treating this release as live.

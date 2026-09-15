@@ -40,7 +40,7 @@ public record Equipment(String id, String name, Slot slot, Rarity rarity, int le
         Rarity rarity = boss ? (level>=31 && roll<8 ? Rarity.EPIC : Rarity.RARE) : level>=31&&roll<2 ? Rarity.EPIC : level>=5&&roll<22 ? Rarity.RARE : Rarity.COMMON;
         String[] armour = {"Traveler's Coat", "Warden's Mail", "Dragonscale Mantle"};
         String name = slot == Slot.WEAPON ? weaponName(type,rarity) : armour[rarity.ordinal()];
-        WeaponAttribute attribute=slot==Slot.WEAPON&&rarity!=Rarity.COMMON?WeaponAttribute.values()[1+random.nextInt(3)]:WeaponAttribute.NONE;
+        WeaponAttribute attribute=slot==Slot.WEAPON&&rarity!=Rarity.COMMON?WeaponAttribute.values()[1+random.nextInt(level>=31?5:3)]:WeaponAttribute.NONE;
         return new Equipment(UUID.randomUUID().toString(),name,slot,rarity,level,2+level/2+rarity.ordinal()*3,0,attribute);
     }
 }

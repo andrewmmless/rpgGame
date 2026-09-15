@@ -4,7 +4,7 @@ import java.util.*;
 public class CoopDungeon {
     public String state="LOBBY",leader;
     public Integer storyRoute;
-    public int stage,objectiveProgress;
+    public int stage,objectiveProgress,comboReadyRound;
     public int integrity=100;
     public int round,enemyHealth,enemyMaxHealth,level;
     public long deadline;
@@ -23,7 +23,7 @@ public class CoopDungeon {
         public List<Character.StatusState> statuses=new ArrayList<>();
         public Member() {}
         Member(String username,GameSave save){this.username=username;original=save;health=save.player().health();resource=save.player().resource();potions=Math.min(3,save.player().potions());}
-        Player player(){Player p=original.player().type().create(original.player().name());p.setLevel(original.player().level());p.setHealth(health);p.setResource(resource);p.setPotions(potions);int weapon=0,armour=0;
+        Player player(){Player p=original.player().type().create(original.player().name());p.setLevel(original.player().level());p.configureBuild(original.claimed(),original.cleared());p.setHealth(health);p.setResource(resource);p.setPotions(potions);int weapon=0,armour=0;
             for(Equipment e:original.inventory())if(e.id().equals(original.equipped().get(e.slot()))){if(e.slot()==Equipment.Slot.WEAPON){weapon=e.power();p.equipAttribute(e.attribute());}else armour=e.power();}
             p.equipBonuses(weapon,armour);p.setSwordDamage(original.player().swordDamage());p.restoreStatuses(statuses);return p;}
         void store(Player p){health=p.getHealth();resource=p.getResource();potions=p.getPotions();statuses=p.snapshotStatuses();}
@@ -64,6 +64,9 @@ public class CoopDungeon {
                 default -> {kind=CombatAction.ABILITY;Ability a=p.getAvailableAbilities().stream().filter(x->x.id().equals(action.substring(8))).findFirst().orElseThrow();p.spendResource(a.cost());if(!enemy.isDead())a.effect().apply(p,enemy,random,effects);m.cooldowns.put(a.id(),a.cooldown());}
             }
             p.getWeaponAttribute().apply(kind,before-enemy.getHealth(),p,enemy,effects);for(String line:effects)say(p.getName()+": "+line);p.endTurn();
+        }
+        if(round>=comboReadyRound&&enemy.getHealth()<enemyHealth&&DuoCombos.eligible(players,members.get(0).action,members.get(1).action)){
+            for(String line:DuoCombos.apply(players,enemy))say(line);comboReadyRound=round+3;
         }
         if(!enemy.isDead()){
             if(enemy.hasStatus(StatusEffect.Kind.STUN))say(enemyName()+" is stunned; its attack is interrupted.");

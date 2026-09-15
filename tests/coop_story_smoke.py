@@ -46,5 +46,15 @@ with tempfile.TemporaryDirectory(prefix='wayfarer-coop-') as tmp:
         move(a,party,'choose','ATTACK',expect=400)
         assert saves==[c.request('/api/export') for c in [a,b]]
         move(a,party,'leave');move(b,party,'leave')
+        state=a.request('/api/game');assert state['build']['points']>=2
+        state=a.request('/api/command',dict(version=state['version'],action='attribute',value='VITALITY'))
+        state=a.request('/api/command',dict(version=state['version'],action='attribute',value='FOCUS'))
+        state=a.request('/api/command',dict(version=state['version'],action='loadout',value='prayer'))
+        assert [x['id'] for x in state['abilities']]==['prayer']
+        saved=a.request('/api/export');a=Client(base);a.login('story_one',password)
+        assert a.request('/api/export')==saved
+        a.request('/api/command',dict(version=state['version'],action='specialise',value='LIGHTWARDEN'),expect=400)
+        assert a.request('/api/export')==saved
+        print('Build API check passed: earned attributes, saved loadout, reconnect persistence and premature specialisation rejected.')
         print('Shared-story HTTP check passed: two accounts, blocked route skip, pending move restart, three stages, objective work, individual progression, duplicate reward rejection.')
     finally:p.terminate();p.wait(timeout=15)

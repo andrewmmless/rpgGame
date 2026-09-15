@@ -45,6 +45,7 @@ public final class GameSession {
         if (value == null) value = "";
         switch(action) {
             case "gather","sell_material" -> {inTown();String[] parts=value.split(":");require(parts.length==2,"Choose a gathering site.");Gathering profession=Gathering.valueOf(parts[0]);int tier=Integer.parseInt(parts[1]);say(action.equals("gather")?profession.gather(tier,player,claimed,cleared,random):profession.sell(tier,player,claimed));}
+            case "attribute","specialise","upgrade_ability","loadout","reset_build" -> {inTown();CharacterBuild.command(action,value,player,claimed,cleared);say("Character build updated. Rest to fill any increased health or resource capacity.");}
             case "craft" -> {inTown();Equipment item=Crafting.craft(value,player,claimed,cleared,inventory.size());if(item!=null)inventory.add(item);say("Crafted "+Crafting.recipe(value).name()+".");}
             case "objective" -> workObjective();
             case "story" -> {inTown();say(StoryPath.speak(value,claimed,cleared));}
@@ -145,6 +146,7 @@ public final class GameSession {
             case "claim" -> claim(value);
             default -> throw new IllegalArgumentException("Unknown action.");
         }
+        player.configureBuild(claimed,cleared);
     }
     private void fight(String value) {
         require(mode==Mode.COMBAT,"There is no active battle.");
@@ -239,7 +241,7 @@ public final class GameSession {
         int bonus=first?Balance.xpNeeded(path.minLevel())*2:0;
         if(first){player.gainXp(bonus);say(path.ending());say("Shared story clear: +"+bonus+" XP.");}
         if(index%3==2)cleared.add(path.area().name());
-        return bonus;
+        player.configureBuild(claimed,cleared);return bonus;
     }
     public GameSave snapshot() {
         GameSave.PlayerData pd=new GameSave.PlayerData(player.getName(),player.getPlayerClass(),player.getLevel(),player.getXp(),player.getHealth(),player.getResource(),player.getCoins(),player.getPotions(),player.getSwordDamage());
@@ -249,7 +251,7 @@ public final class GameSession {
     public static GameSession restore(GameSave save, Random random) {
         if(save.schemaVersion()!=1)throw new IllegalArgumentException("Unsupported save version.");
         GameSave.PlayerData pd=save.player();Player p=pd.type().create(pd.name());
-        p.setLevel(pd.level());p.setXp(pd.xp());p.setHealth(pd.health());p.setResource(pd.resource());p.setCoins(pd.coins());p.setPotions(pd.potions());p.setSwordDamage(pd.swordDamage());
+        p.setLevel(pd.level());p.configureBuild(save.claimed(),save.cleared());p.setXp(pd.xp());p.setHealth(pd.health());p.setResource(pd.resource());p.setCoins(pd.coins());p.setPotions(pd.potions());p.setSwordDamage(pd.swordDamage());
         GameSession game=new GameSession(p,random);
         game.mode=Mode.valueOf(save.mode());game.area=save.area();game.room=save.room();game.kills=save.kills();game.deaths=save.deaths();
         game.towerBest=save.towerBest();game.towerFloor=save.towerFloor();game.cleared.addAll(save.cleared());game.claimed.addAll(save.claimed());
@@ -278,7 +280,8 @@ public final class GameSession {
         view.put("chests",availableChests());view.put("chestEpicChance",Math.max(highestRoute().minLevel(),Math.min(highestRoute().maxLevel(),player.getLevel()))>=31?8:0);view.put("shopPrice",20+shopLevel()*6);view.put("shopLevel",shopLevel());
         view.put("inventory",inventory.stream().map(i->Map.of("item",i,"equipped",i.id().equals(equipped.get(i.slot())),"value",i.value(),"upgradeCost",i.upgradeCost(),"attributeDescription",i.attribute().description(),"protected",claimed.contains("keep:"+i.id()))).toList());
         view.put("regions",Campaign.REGIONS.stream().map(r->Map.of("id",r.area(),"name",r.area().getDisplayName(),"subtitle",r.subtitle(),"story",r.story(),"boss",r.boss(),"quest",r.quest(),"minLevel",r.area().getMinLevel(),"maxLevel",r.area().getMaxLevel(),"unlocked",unlocked(r.area()))).toList());
-        view.put("abilities",player.getAbilities().stream().map(a->Map.of("id",a.id(),"name",a.name(),"cost",a.cost(),"unlockLevel",a.unlockLevel(),"cooldown",combat==null?0:combat.getCooldown(a.id()),"baseCooldown",a.cooldown())).toList());
+        view.put("build",CharacterBuild.view(player,claimed,cleared));
+        view.put("abilities",player.getAvailableAbilities().stream().map(a->Map.of("id",a.id(),"name",a.name(),"cost",a.cost(),"unlockLevel",a.unlockLevel(),"cooldown",combat==null?0:combat.getCooldown(a.id()),"baseCooldown",a.cooldown())).toList());
         if(mode==Mode.COMBAT)view.put("enemy",Map.of("name",enemy.getName(),"level",enemy.getLevel(),"health",enemy.getHealth(),"maxHealth",enemy.getMaxHealth(),"boss",enemy.isBoss(),"intent",enemy.intent(combat.getRound()),"advice",enemy.advice(combat.getRound()),"statuses",enemy.getStatuses()));
         return view;
     }
