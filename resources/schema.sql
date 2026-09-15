@@ -18,3 +18,8 @@ CREATE TABLE IF NOT EXISTS hearthglen.rpg_scores (
     tower INTEGER NOT NULL,
     ranked BOOLEAN NOT NULL
 );
+CREATE TABLE IF NOT EXISTS hearthglen.rpg_developer_saves (
+    username VARCHAR(32) PRIMARY KEY REFERENCES hearthglen.rpg_users(username),
+    version BIGINT NOT NULL,
+    payload TEXT NOT NULL
+);

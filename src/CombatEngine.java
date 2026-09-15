@@ -34,6 +34,7 @@ public final class CombatEngine {
         if(!stunned && action==CombatAction.POTION && (player.getPotions()==0 || player.getHealth()==player.getMaxHealth()))
             return result(false,List.of("Potion cannot be used."));
         cooldowns.replaceAll((id,turns)->Math.max(0,turns-1));
+        int healthBeforeAction=enemy.getHealth();
         if(stunned) events.add("You are stunned.");
         else switch(action) {
             case ATTACK -> events.add("Attack dealt "+enemy.receiveDamage(player.rollDamage(random,-2,2),DamageType.PHYSICAL)+" damage.");
@@ -42,6 +43,7 @@ public final class CombatEngine {
             case POTION -> {player.usePotion();events.add("You drink a potion.");}
             case FLEE -> {if(random.nextDouble()<player.getFleeChance()){outcome=CombatResult.Outcome.FLED;events.add("You escaped.");}else events.add("Escape failed.");}
         }
+        if(!stunned)player.getWeaponAttribute().apply(action,healthBeforeAction-enemy.getHealth(),player,enemy,events);
         player.endTurn();
         if(player.isDead())outcome=CombatResult.Outcome.DEFEAT;
         if(outcome==CombatResult.Outcome.ACTIVE && !enemy.isDead()) {

@@ -13,7 +13,7 @@ To rebuild after editing:
 java -jar target/rpg-game-4.1.0.jar --server.port=18080
 ```
 
-New players can import an existing console `.txt` save during character creation. Original save files remain unchanged. Run `Main` for the original console game; it shares the player and combat foundation, but the new campaign is played in the browser.
+Web save imports are disabled. Original console save files remain unchanged. Run `Main` for the original console game; it shares the player and combat foundation, but the new campaign is played in the browser.
 
 ## What is playable
 
@@ -25,7 +25,7 @@ New players can import an existing console `.txt` save during character creation
 - Equipment drops with three rarities, two slots, selling, and five upgrades per item. Bosses guarantee rare/epic equipment.
 - Five reward quests, four milestones, and an Endless Tower after defeating Victoria.
 - Defeat loses 10% of coins and ends the expedition; recovery keeps character and equipment.
-- Accounts, sign-in/out, autosave after each accepted action, mid-combat resume, console-save import, downloadable JSON backup.
+- Accounts, sign-in/out, autosave after each accepted action, mid-combat resume, earned chest reveals, downloadable JSON backup.
 
 This is a first playable campaign, not a finished commercial release. There is no multiplayer, email/password recovery, multiple character slots, branching dialogue, or complex crafting. Expeditions use a fixed five-stop structure with randomized opponents and loot. Artwork is stylized and shared between regions; individual enemy illustrations remain future polish.
 
@@ -35,7 +35,7 @@ Core Java files stay in `src/`; no Spring imports in the game rules. `GameSessio
 
 The browser sends actions, never authoritative health, damage, or rewards. PostgreSQL/H2 store account hashes and game JSON in the private `hearthglen` schema. Passwords use BCrypt, mutations require CSRF tokens, account identity comes from the authenticated session, and optimistic version checks reject stale tabs. Accepted commands and their snapshots commit together. Re-sign-in after a server restart is expected; the saved game resumes unchanged.
 
-Local saves are in ignored `data/`. Back up that directory only while the local server is stopped. Production uses external PostgreSQL. Save schema version is 1; future changes need a migration before increasing it. Downloaded JSON backups currently require an administrator-assisted restore; the in-game import accepts console .txt saves only. Console files remain in their original locations and are not uploaded until the player chooses a file.
+Local saves are in ignored `data/`. Back up that directory only while the local server is stopped. Production uses external PostgreSQL. Save schema version is 1; future changes need a migration before increasing it. Downloaded JSON backups currently require an administrator-assisted restore. Web save imports are disabled. Console files remain in their original locations.
 
 ## Verification
 
@@ -45,8 +45,10 @@ sh test.sh
 python3 tests/web_smoke.py
 ```
 
-Campaign tests cover a full four-region progression with serialization between actions, mode/area gates, equipment scaling, boss telegraphs, all ability unlocks, and 400 starter expeditions. The original 84 checks include 4,000 normal-fight balance simulations. HTTP tests start an isolated local server and check authentication, CSRF, separate accounts, stale versions, imports, and saves surviving a server restart. They require Python 3 and permission to bind a local port.
+Campaign tests cover a full four-region progression with serialization between actions, mode/area gates, equipment scaling, boss telegraphs, all ability unlocks, and 400 starter expeditions. The original 84 checks include 4,000 normal-fight balance simulations. HTTP tests start an isolated local server and check authentication, CSRF, separate accounts, stale versions, blocked imports, developer access and isolation, chest sales, and saves surviving a server restart. They require Python 3 and permission to bind a local port.
 
 ## Deploy
 
 See [DEPLOYMENT.md](DEPLOYMENT.md). The Dockerfile and Render blueprint are included; production account/database setup is still required. No public deployment or paid service has been created.
+
+The current prototype adds an illustrated clickable town, a blacksmith shop, an equipment comparison interface, milestone chests with keep/sell confirmation, and functional weapon attributes. The owner can enable a separate unranked Developer Lab through `DEVELOPER_USERNAME`; see DEPLOYMENT.md. The proposed co-op, profession, subclass, housing and endgame redesign is recorded in COOP-DESIGN.md and is not implemented yet.

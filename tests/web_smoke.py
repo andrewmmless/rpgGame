@@ -21,9 +21,9 @@ class Client:
 with tempfile.TemporaryDirectory(prefix='hearthglen-http-') as tmp:
     with socket.socket() as s:s.bind(('127.0.0.1',0));port=s.getsockname()[1]
     base=f'http://127.0.0.1:{port}'
-    def start():
+    def start(developer="qa_one"):
         log=open(Path(tmp)/'server.log','a')
-        proc=subprocess.Popen(['java','-jar',str(jar),f'--server.port={port}'],cwd=tmp,stdout=log,stderr=subprocess.STDOUT)
+        proc=subprocess.Popen(['java','-jar',str(jar),f'--server.port={port}',f'--DEVELOPER_USERNAME={developer}'],cwd=tmp,stdout=log,stderr=subprocess.STDOUT)
         for _ in range(100):
             try:
                 if urllib.request.urlopen(base+'/health',timeout=1).status==200:return proc
@@ -66,12 +66,44 @@ with tempfile.TemporaryDirectory(prefix='hearthglen-http-') as tmp:
         board=c.request('/api/leaderboard');assert len(board)==2 and all(row['ranked'] for row in board)
         assert all(row['level']==1 and row['kills']==0 for row in board),'Client supplied stats must never affect scores'
         assert all('username' not in row for row in board)
+        assert c.request('/api/developer/me')['enabled']
+        assert not other.request('/api/developer/me')['enabled']
+        other.request('/api/developer/game',expect=403)
+        other.request('/api/developer/character',dict(name='Hack',playerClass='MAGE'),expect=403)
+        other.request('/api/developer/command',dict(version=0,action='dev_reset',value='MAGE'),expect=403)
+        c.request('/api/command',dict(version=state['version'],action='dev_reset',value='MAGE'),expect=400)
+        normal_before=c.request('/api/export')
+        lab=c.request('/api/developer/character',dict(name='Ignored',playerClass='MAGE'))
+        assert lab['developer'] and lab['player']['level']==25 and lab['chests']==5
+        assert len(lab['inventory'])==6 and all(r['unlocked'] for r in lab['regions'])
+        coins=lab['player']['coins'];price=lab['shopPrice']
+        lab=c.request('/api/developer/command',dict(version=lab['version'],action='buy_gear',value='WEAPON'))
+        assert lab['player']['coins']==coins-price and len(lab['inventory'])==7
+        c.request('/api/developer/command',dict(version=lab['version'],action='buy_gear',value='INVALID'),expect=400)
+
+        lab=c.request('/api/developer/command',dict(version=lab['version'],action='open_chest',value=''))
+        item=lab['inventory'][-1];coins=lab['player']['coins']
+        lab=c.request('/api/developer/command',dict(version=lab['version'],action='sell',value=item['item']['id']))
+        assert lab['player']['coins']==coins+item['value']
+        c.request('/api/developer/command',dict(version=lab['version'],action='sell',value=item['item']['id']),expect=400)
+        c.request('/api/developer/command',dict(version=0,action='dev_reset',value='ROGUE'),expect=409)
+        c.request('/api/developer/command',dict(version=lab['version'],action='dev_level',value='101'),expect=400)
+        lab=c.request('/api/developer/command',dict(version=lab['version'],action='dev_level',value='1'))
+        assert lab['player']['level']==1 and lab['mode']=='TOWN'
+        assert c.request('/api/export')==normal_before
+        assert c.request('/api/leaderboard')==board,'Developer items, coins, levels and chest sales must not affect rankings'
+
         proc.terminate();proc.wait(timeout=15);proc=start()
         c=Client(base);c.login('qa_one',password)
         assert c.request('/api/export')==saved,'Restart must preserve encounter, health, resource, statuses and cooldowns'
+        assert c.request('/api/developer/game')['player']['level']==1
         state=c.request('/api/game');command('combat','ATTACK')
         assert state['mode']=='TRAIL' and state['kills']==1
         c.request('/api/logout',{},expect=204);c.request('/api/game',expect=401)
-        print('HTTP checks passed: registration, login, CSRF, account isolation, stale-tab protection, blocked imports and forged scores, battle autosave, server restart, victory, logout.')
+        proc.terminate();proc.wait(timeout=15);proc=start(developer='')
+        c=Client(base);c.login('qa_one',password)
+        assert not c.request('/api/developer/me')['enabled']
+        c.request('/api/developer/game',expect=403)
+        print('HTTP checks passed: developer authorization, sandbox isolation, revocation, chest sale,  registration, login, CSRF, account isolation, stale-tab protection, blocked imports and forged scores, battle autosave, server restart, victory, logout.')
     finally:
         proc.terminate();proc.wait(timeout=15)

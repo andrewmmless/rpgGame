@@ -22,7 +22,7 @@ public class WebSecurity {
     }
     @Bean SecurityFilterChain security(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth -> auth
-            .requestMatchers("/","/index.html","/app.js","/style.css","/favicon.svg","/landscape.svg","/api/csrf","/api/register","/api/me","/health").permitAll()
+            .requestMatchers("/","/index.html","/app.js","/style.css","/favicon.svg","/landscape.svg","/town.svg","/api/csrf","/api/register","/api/me","/health").permitAll()
             .anyRequest().authenticated());
         // Spring Security keeps session-based CSRF protection enabled for every mutation, including login/logout.
         http.formLogin(form -> form.loginProcessingUrl("/api/login")

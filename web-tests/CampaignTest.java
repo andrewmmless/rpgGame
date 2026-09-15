@@ -30,6 +30,44 @@ class CampaignTest {
         assertEquals(4,game.snapshot().cleared().size());
         game.command("tower","");assertEquals(1,game.snapshot().towerFloor());
     }
+    @Test void milestoneChestsPersistAndCannotBeRerolledOrClaimedEarly() {
+        GameSession fresh=new GameSession(new Mage("Chest"),new Random(1));
+        assertThrows(IllegalArgumentException.class,()->fresh.command("open_chest",""));
+        GameSave s=fresh.snapshot();
+        GameSave earned=new GameSave(s.schemaVersion(),s.player(),s.mode(),s.area(),s.room(),3,s.deaths(),s.towerBest(),s.towerFloor(),s.cleared(),s.claimed(),s.inventory(),s.equipped(),s.log(),s.battle());
+        GameSession game=GameSession.restore(earned,new Random(1));
+        assertEquals(1,game.view().get("chests"));
+        game.command("open_chest","EPIC");
+        assertEquals(1,game.snapshot().inventory().size());assertEquals(0,game.view().get("chests"));
+        GameSave saved=game.snapshot();GameSession restored=GameSession.restore(saved,new Random(99));
+        assertThrows(IllegalArgumentException.class,()->restored.command("open_chest",""));
+        assertEquals(saved,restored.snapshot(),"A rejected reroll must preserve the original reward");
+        List<Equipment> full=new ArrayList<>();for(int n=0;n<30;n++)full.add(new Equipment("item"+n,"Sword",Equipment.Slot.WEAPON,Equipment.Rarity.COMMON,1,2,0));
+        GameSave fullSave=new GameSave(s.schemaVersion(),s.player(),s.mode(),s.area(),s.room(),3,s.deaths(),s.towerBest(),s.towerFloor(),s.cleared(),s.claimed(),full,s.equipped(),s.log(),s.battle());
+        GameSession fullGame=GameSession.restore(fullSave,new Random(1));
+        assertThrows(IllegalArgumentException.class,()->fullGame.command("open_chest",""));
+        assertEquals(1,fullGame.view().get("chests"));assertEquals(fullSave,fullGame.snapshot());
+        GameSession onTrail=GameSession.restore(earned,new Random(1));onTrail.command("adventure","WHISPERING_WOODS");
+        assertThrows(IllegalArgumentException.class,()->onTrail.command("open_chest",""));
+    }
+    @Test void weaponAttributesWorkAndSurviveEquipmentSaveRoundTrips() throws Exception {
+        Player p=new Mage("Attribute");p.setResource(10);p.equipAttribute(WeaponAttribute.FOCUS);
+        Enemy target=new Enemy("Target",1,500,0,0,0,0,0,0);CombatEngine engine=new CombatEngine(p,target,new Random(1));
+        engine.performAction(CombatAction.DEFEND);assertEquals(18,p.getResource());
+        p.equipAttribute(WeaponAttribute.SIPHON);p.setHealth(30);int hp=p.getHealth();
+        CombatResult siphon=engine.performAction(CombatAction.ABILITY,"fireball");assertTrue(siphon.events().stream().anyMatch(e->e.startsWith("Siphon restored 2")));
+        assertTrue(p.getHealth()>=hp);
+        p.equipAttribute(WeaponAttribute.PIERCING);CombatResult piercing=engine.performAction(CombatAction.ATTACK);
+        assertTrue(piercing.events().stream().anyMatch(e->e.startsWith("Piercing dealt 2")));
+        Equipment sword=new Equipment("trait","Focus Blade",Equipment.Slot.WEAPON,Equipment.Rarity.RARE,1,3,0,WeaponAttribute.FOCUS);
+        assertEquals(WeaponAttribute.FOCUS,sword.upgrade().attribute());
+        JsonMapper json=JsonMapper.builder().build();assertEquals(sword,json.readValue(json.writeValueAsString(sword),Equipment.class));
+        String legacy=json.writeValueAsString(sword).replace(",\"attribute\":\"FOCUS\"","");
+        assertEquals(WeaponAttribute.NONE,json.readValue(legacy,Equipment.class).attribute());
+        GameSave base=new GameSession(new Mage("Test"),new Random(1)).snapshot();
+        GameSave save=new GameSave(1,base.player(),base.mode(),base.area(),0,0,0,0,0,Set.of(),Set.of(),List.of(sword),Map.of(Equipment.Slot.WEAPON,"trait"),base.log(),null);
+        GameSession restored=GameSession.restore(save,new Random(1));assertEquals(save,restored.snapshot());
+    }
     @Test void commandsRespectModeAndAreaGates() {
         GameSession game=new GameSession(new Warrior("Test"),new Random(1));
         assertThrows(IllegalArgumentException.class,()->game.command("adventure","STONEFANG_CAVES"));

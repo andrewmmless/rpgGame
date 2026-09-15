@@ -76,6 +76,13 @@ public final class GameSession {
                 say("The wardens bring you home. Your equipment and progress are safe.");
             }
             case "potion" -> { inTown();require(player.usePotion(),"No potion needed or available.");say("Used a potion."); }
+            case "buy_gear" -> {
+                inTown();Equipment.Slot slot=Equipment.Slot.valueOf(value);
+                require(inventory.size()<30,"Make room in your bag first.");
+                int price=20+player.getLevel()*6;require(player.spendCoins(price),"Not enough coins for this equipment.");
+                Equipment bought=new Equipment(UUID.randomUUID().toString(),slot==Equipment.Slot.WEAPON?"Iron Longsword":"Traveler's Coat",slot,Equipment.Rarity.COMMON,player.getLevel(),2+player.getLevel()/2,0);
+                inventory.add(bought);say("Bought "+bought.name()+" for "+price+" coins. Equip it in your backpack.");
+            }
             case "buy_potion" -> {
                 inTown();require(player.getPotions()<99,"Your potion pouch is full.");
                 require(player.spendCoins(8),"You need 8 coins.");player.addPotion();say("Bought a health potion for 8 coins.");
@@ -83,6 +90,13 @@ public final class GameSession {
             case "train" -> {
                 inTown();require(!claimed.contains("training"),"You have completed the introductory training.");
                 claimed.add("training");player.gainXp(15);say("Training complete: +15 XP. Defend halves damage; bosses warn you before heavy attacks.");
+            }
+            case "open_chest" -> {
+                inTown();require(availableChests()>0,"Earn a chest by winning three fights, clearing a new region, or clearing a new tower floor.");
+                require(inventory.size()<30,"Make room in your bag before opening a chest.");
+                Equipment reward=Equipment.drop(random,player.getLevel(),true);
+                inventory.add(reward);claimed.add("chest:"+openedChests());
+                say("Opened a milestone chest: "+reward.name()+" ("+reward.rarity().name().toLowerCase(Locale.ROOT)+").");
             }
             case "equip" -> {
                 inTown();Equipment item=item(value);equipped.put(item.slot(),item.id());applyEquipment();say("Equipped "+item.name()+".");
@@ -127,6 +141,8 @@ public final class GameSession {
             default -> { }
         }
     }
+    private int openedChests() { return (int)claimed.stream().filter(id->id.startsWith("chest:")).count(); }
+    private int availableChests() { return Math.max(0,(kills>=3?1:0)+cleared.size()+towerBest-openedChests()); }
     private Equipment item(String id) { return inventory.stream().filter(i->i.id().equals(id)).findFirst().orElseThrow(()->new IllegalArgumentException("Item not found.")); }
     private void drop(boolean boss) {
         if(!boss && random.nextInt(100)>=55)return;
@@ -135,9 +151,9 @@ public final class GameSession {
         else {inventory.add(item);say("Found "+item.rarity().name().toLowerCase(Locale.ROOT)+" "+item.name()+". Equip it when you return to town.");}
     }
     private void applyEquipment() {
-        int weapon=0,armour=0;
+        int weapon=0,armour=0;player.equipAttribute(WeaponAttribute.NONE);
         for(Equipment item:inventory)if(item.id().equals(equipped.get(item.slot()))) {
-            if(item.slot()==Equipment.Slot.WEAPON)weapon+=item.power();else armour+=item.power();
+            if(item.slot()==Equipment.Slot.WEAPON){weapon+=item.power();player.equipAttribute(item.attribute());}else armour+=item.power();
         }
         player.equipBonuses(weapon,armour);
     }
@@ -178,7 +194,8 @@ public final class GameSession {
         view.put("player",Map.ofEntries(Map.entry("name",player.getName()),Map.entry("type",player.getPlayerClass()),Map.entry("level",player.getLevel()),Map.entry("xp",player.getXp()),Map.entry("nextXp",player.getXpToNextLevel()),Map.entry("health",player.getHealth()),Map.entry("maxHealth",player.getMaxHealth()),Map.entry("resource",player.getResource()),Map.entry("maxResource",player.getMaxResource()),Map.entry("coins",player.getCoins()),Map.entry("potions",player.getPotions()),Map.entry("attack",player.getAttackPower()),Map.entry("defence",player.getDefence()),Map.entry("statuses",player.getStatuses())));
         view.put("mode",mode);view.put("area",area);view.put("room",room);view.put("towerFloor",towerFloor);view.put("towerBest",towerBest);
         view.put("kills",kills);view.put("deaths",deaths);view.put("log",List.copyOf(log));view.put("cleared",Set.copyOf(cleared));view.put("claimed",Set.copyOf(claimed));
-        view.put("inventory",inventory.stream().map(i->Map.of("item",i,"equipped",i.id().equals(equipped.get(i.slot())),"value",i.value(),"upgradeCost",i.upgradeCost())).toList());
+        view.put("chests",availableChests());view.put("shopPrice",20+player.getLevel()*6);
+        view.put("inventory",inventory.stream().map(i->Map.of("item",i,"equipped",i.id().equals(equipped.get(i.slot())),"value",i.value(),"upgradeCost",i.upgradeCost(),"attributeDescription",i.attribute().description())).toList());
         view.put("regions",Campaign.REGIONS.stream().map(r->Map.of("id",r.area(),"name",r.area().getDisplayName(),"subtitle",r.subtitle(),"story",r.story(),"boss",r.boss(),"quest",r.quest(),"minLevel",r.area().getMinLevel(),"maxLevel",r.area().getMaxLevel(),"unlocked",unlocked(r.area()))).toList());
         view.put("abilities",player.getAbilities().stream().map(a->Map.of("id",a.id(),"name",a.name(),"cost",a.cost(),"unlockLevel",a.unlockLevel(),"cooldown",combat==null?0:combat.getCooldown(a.id()),"baseCooldown",a.cooldown())).toList());
         if(mode==Mode.COMBAT)view.put("enemy",Map.of("name",enemy.getName(),"level",enemy.getLevel(),"health",enemy.getHealth(),"maxHealth",enemy.getMaxHealth(),"boss",enemy.isBoss(),"intent",enemy.intent(combat.getRound()),"statuses",enemy.getStatuses()));

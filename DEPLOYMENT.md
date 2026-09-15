@@ -10,7 +10,7 @@ The game is packaged as one Spring Boot application: the browser UI and Java API
    - `DATABASE_USERNAME`: your database username (for Supabase's session pooler, commonly `postgres.PROJECT_REFERENCE`)
    - `DATABASE_PASSWORD`: your database password
 5. Deploy. The blueprint sets production mode, HTTPS-only cookies, and the bind address. The application refuses production startup without PostgreSQL, SSL configuration, and secure cookies.
-6. Verify `/health`, create a test account, finish a fight, redeploy, sign in again, and confirm the save is preserved. Then create your own account and import your console save if desired.
+6. Verify `/health`, create a test account, finish a fight, redeploy, sign in again, and confirm the save is preserved. Then create your own account. Web save imports are disabled.
 
 Schema tables are created under **hearthglen**, not Supabase's public schema. Do not add this schema to Supabase's exposed API schemas or grant anonymous roles access to account/save tables. The Java backend is the database client; no database password is sent to the browser.
 
@@ -23,3 +23,6 @@ Develop and test on rework; deploy a reviewed checkpoint. The running website ch
 Before a broader public launch, add account recovery and review dependency updates, abuse controls, backups, and accessibility with real players. Email recovery needs a mail provider and verified domain; it is not silently simulated here.
 
 Official references: [Render Docker](https://render.com/docs/docker), [Render Blueprints](https://render.com/docs/blueprint-spec), [Supabase PostgreSQL connections](https://supabase.com/docs/guides/database/connecting-to-postgres), [Spring Boot SQL](https://docs.spring.io/spring-boot/reference/data/sql.html).
+
+## Developer lab (optional)
+Set the Render environment variable `DEVELOPER_USERNAME` to the existing owner's lower-case account name (`andrew` for Andrew's requested account). It is disabled when unset. Never configure an unregistered name. The session identity is checked on every developer endpoint; no client field or query parameter grants access. The lab stores a separate test save and never updates ranked scores or normal saves. Remove the variable to revoke access. Do not share the owner's login.

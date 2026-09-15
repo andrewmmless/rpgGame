@@ -3,6 +3,9 @@ import java.util.*;
 public abstract class Player extends Character {
     private final PlayerClass playerClass;
     private int weaponBonus, armourBonus;
+    private WeaponAttribute weaponAttribute=WeaponAttribute.NONE;
+    public WeaponAttribute getWeaponAttribute(){return weaponAttribute;}
+    public void equipAttribute(WeaponAttribute attribute){weaponAttribute=Objects.requireNonNull(attribute); }
     private int level=1, xp, coins, potions=3, swordDamage, resource=40;
     protected Player(String name, PlayerClass type) {
         super(name,type.health,type.attack,type.armour); playerClass=type;
