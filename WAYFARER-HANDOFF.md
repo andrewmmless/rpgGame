@@ -89,3 +89,6 @@ This is the source-code handoff, not confirmation of a successful live Render de
 The Java package build and all 21 tests passed during this pass; frontend JavaScript syntax also passed. Earlier route tests cover saved progress across all twelve routes, gate rejection, first-clear reward limits and early loot ceilings. This is not a long-duration level-1-to-60 balance study, full browser/device accessibility audit, or confirmation of live deployment. Avoid repeatedly running broad simulations; use player feedback and focused checks as changes warrant.
 
 Detailed plot and future scene design: STORY-PATH.md. Original requirements and checkpoint history: DEVELOPMENT-PLAN.md. This handoff supersedes older statements that the twelve sub-areas or guild housing were unbuilt.
+
+### Cinder palette follow-up
+The interface now uses crimson/ember buttons, health and resource bars, selected navigation, class selection, promotion highlights and warm ash surfaces in both themes. The app icon is a flame. Map hover anchoring is retained. Natural terrain and equipment rarity colors remain distinguishable.

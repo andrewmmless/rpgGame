@@ -33,3 +33,19 @@
 .kingdom-building svg{width:45px;height:36px;justify-self:center}.past-routes{margin:15px 0}.past-routes summary{cursor:pointer;color:var(--muted);font-size:12px}.past-routes p{padding:12px 0}.battle-scene{background:radial-gradient(ellipse at bottom,#a9513e20,transparent 65%);border-bottom:2px solid #a26e4e50}.enemy-art{transition:filter .2s}.expedition-head{border-left:4px solid var(--forest);padding-left:18px}[data-theme=dark] :is(.class-option,.class-option.selected,.loadout-slot,.bag-filters,.item-power,.journey-scene>div){background:#29242d;color:var(--ink)}
 /* Map markers are positioned by a transform; hover must never replace that anchor. */
 .kingdom-node:hover:not(:disabled),.kingdom-node:focus-visible{transform:translate(-50%,-50%);border-color:#ffe0a0;box-shadow:0 0 0 3px #e7bd7040,0 4px 10px #132b2840}.kingdom-building:hover:not(:disabled){transform:none;border-color:#ffe0a0}
+
+/* Cinder palette: crimson magic, ember highlights and warm ash surfaces. */
+:root{--ink:#402421;--forest:#a52e30;--muted:#84625c;--paper:#faf0e6;--line:#e6cfc1;--gold:#d49742;--red:#b5282e;--green:#c74436;--shadow:0 10px 35px #6c231512}
+body{background:radial-gradient(ellipse at top,#f5d3bd55,transparent 65%),var(--paper)}
+.topbar{background:#fff1e5;border-bottom-color:#e6c4af}.brand strong{color:#a52e30}.brand small{color:#9b6759}
+button.primary{background:linear-gradient(135deg,#a92430,#c65332);border-color:#a92430;box-shadow:0 3px 10px #8f261b18}button.primary:hover:not(:disabled){background:linear-gradient(135deg,#bf3036,#d26638)}
+.bar i{background:linear-gradient(90deg,#a92430,#ec7250)}.bar.blue i{background:linear-gradient(90deg,#b13b32,#f3ad52)}.bar.gold i{background:linear-gradient(90deg,#c37a31,#f1c76c)}
+.saved{color:#a34432}.tag{color:#986040;border-color:#dfb995}.step.current{border-color:#c43d30}.step.done{border-color:#d79254}
+.class-option.selected{background:#f7dfcd;border-color:#b53432}.game-nav button.active{color:#aa292c;box-shadow:inset 0 -3px #c74731}.game-nav button:hover:not(:disabled){color:#b6382c}
+.story-fold{background:#fff0db90;border-color:#e3bc99}.route-panel{background:#fff4e980}.kingdom-node.chosen{outline-color:#ff9c55}.kingdom-node:hover:not(:disabled),.kingdom-node:focus-visible{border-color:#ffb46f;box-shadow:0 0 0 3px #f17d3640,0 4px 10px #4a1c2340}
+.promotion-path li.earned{background:#e89b3520;border-color:#cf773e}.battle-scene{background:radial-gradient(ellipse at bottom,#dc572d28,transparent 70%)}.intent.heavy{border-color:#ce4533;background:#ffe1cf;color:#802923}
+[data-theme=dark]{--ink:#f8e6d9;--forest:#e97761;--muted:#cfaaa0;--paper:#1b1213;--line:#53322f;--red:#ff8d77;--gold:#edb65f}
+[data-theme=dark] body{background:radial-gradient(ellipse at top,#6c281e33,transparent 65%),var(--paper)}
+[data-theme=dark] :is(.topbar,.status-strip,.auth-form,.game-nav,.route-panel,.story-fold,.social-card,.social-forms form,.wide-card,.skill-card,.bag-panel,.item-detail,.loadout-bar,.bulk-panel,.chest-panel,.town-person,.town-services,.quiet-scene,.coop-intro,.party-member,.reward-grid article,.promotion-path){background:#291b1b;border-color:var(--line)}
+[data-theme=dark] .brand strong{color:#f3a17e}[data-theme=dark] .brand small{color:#d1a591}[data-theme=dark] .game-nav button.active{color:#ffb18f;box-shadow:inset 0 -3px #f37551}[data-theme=dark] .game-nav button:hover:not(:disabled){color:#ffd0aa}
+[data-theme=dark] button.primary{background:linear-gradient(135deg,#9f2934,#ba4b2e);border-color:#d15a43;color:#fff4e9}[data-theme=dark] .saved{color:#efad87}[data-theme=dark] .tag{color:#e7b580;border-color:#795340}[data-theme=dark] .class-option.selected{background:#552923;border-color:#ec8b64}[data-theme=dark] .promotion-path li.earned{background:#74342235}[data-theme=dark] .intent.heavy{background:#542723;color:#ffd6bd;border-color:#c85d49}
