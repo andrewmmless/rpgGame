@@ -41,7 +41,7 @@ public final class EnemyFactory {
             new Definition("Shadow Knight",18,42,55,false),
             new Definition("Storm Harpy",19,40,50,false),
             new Definition("Ancient Guardian",21,50,65,false),
-            new Definition("Victoria the Dragon",25,150,220,true)
+            new Definition("Ashwing, the Red Wyrm",25,150,220,true)
         )
     );
     public static Enemy randomEnemy(Random random,Area area,int playerLevel) {

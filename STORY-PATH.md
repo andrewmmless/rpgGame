@@ -3,7 +3,7 @@
 ## The promise
 You enter crown service as a junior member of a frontier relief company. Cindergard is a working kingdom: villages need food, miners need safe roads, nobles owe soldiers, and the crown cannot defend every border alone. You and your partner earn responsibility together through useful deeds. Noble-era adventure and court rivalry provide the tone; no chosen-one prophecy or instant royal favour.
 
-The founding houses earned their standing fighting dragons, then swore a pact that ended the war. Victoria has broken that pact. Someone at court has also been stripping its boundary wards for prestige and military power. Monsters are being driven toward settlements as the wards fail. Human wrongdoing explains the crisis without excusing the dragon's attacks.
+The founding houses earned their standing fighting dragons, then swore a pact that ended the war. Ashwing has broken that pact. Someone at court has also been stripping its boundary wards for prestige and military power. Monsters are being driven toward settlements as the wards fail. Human wrongdoing explains the crisis without excusing the dragon's attacks.
 
 The core question: what makes someone worthy of serving a kingdom—inheritance, obedience, or protecting its people?
 
@@ -19,7 +19,7 @@ The core question: what makes someone worthy of serving a kingdom—inheritance,
 2. Whispering Woods: Old Timberline protects supply wagons; Hollow Reach investigates abandoned watchposts; Blighted Grove confronts the displaced Alpha Wolf. Evidence shows a royal ward was deliberately removed. First promotion: Knight / Battle Mage / Field Healer / Ranger. Cedric's first supervised contest is about protecting a convoy, not killing each other.
 3. Stonefang Caves: Entrance Tunnels restores access for miners; Deep Shaft escorts a recovery team; The Fracture breaks the Orc Chieftain's blockade. Rowan links missing ward-stone to a sealed noble requisition. The Hollow Vein becomes a future mining site. Cedric finds his family seal on the order. Second promotion follows the regional clear.
 4. Forgotten Ruins: Outer Colonnade secures an evacuation route; Sunken Hall recovers testimony; The Drowned Archive reveals the pact's obligations and the cost of dismantling its wards. The Lich Acolyte is exploiting that damage. Cedric initially tries to suppress the evidence, then helps save witnesses. The archive later supports fishing without requiring repeated story scenes. Third promotion follows the regional clear.
-5. Dragon's Spire: Ashen Approach establishes a supply camp; The Scarred Path holds it against an assault; The Wyrm's Hollow reaches the ruined pact sanctuary. Cedric publicly chooses crown service over his house's cover-up. The player company confronts Victoria. The final regional victory earns the fifth class rank and the separate Dragonbane title.
+5. Dragon's Spire: Ashen Approach establishes a supply camp; The Scarred Path holds it against an assault; The Wyrm's Hollow reaches the ruined pact sanctuary. Cedric publicly chooses crown service over his house's cover-up. The player company confronts Ashwing. The final regional victory earns the fifth class rank and the separate Dragonbane title.
 6. Return to service: a modest court recognition and scenes with the people helped along the road. Joint completion can earn a shared remembrance. Optional future threats and gathering remain available; Tower is a side activity, not the story's destination.
 
 ## Rules for every chunk

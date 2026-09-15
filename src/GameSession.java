@@ -47,7 +47,7 @@ public final class GameSession {
                 say(path.complete(claimed,cleared)?"Patrol: "+path.name()+". Keep the route safe and gather equipment.":path.captain()+": "+path.opening());
             }
             case "tower" -> {
-                inTown(); require(cleared.size()==4,"Defeat Victoria to unlock the Endless Tower.");
+                inTown(); require(cleared.size()==4,"Defeat Ashwing to unlock the Endless Tower.");
                 towerFloor=towerBest+1;area=Area.DRAGONS_SPIRE;room=0;mode=Mode.TRAIL;
                 say("You enter floor "+towerFloor+" of the Endless Tower.");
             }

@@ -180,3 +180,7 @@ Still pending: playable sub-areas, prologue/NPC story dialogue and quests, autho
 ### Twelve-route story release
 
 See STORY-PATH.md for the canonical plot and latest implementation status. The complete linear story now spans all twelve named sub-areas through level 60, with NPC mission scenes, distinct guardians, route-by-route unlocks and a court ending. This supersedes the earlier notes saying sub-areas are unimplemented. Bespoke escort/defense objectives, rival duels, progression choices and shared co-op chapter advancement remain later work.
+
+### Presentation and navigation release
+
+See WAYFARER-HANDOFF.md for the complete current-state inventory and remaining work. Added red/ember opening artwork, Ashwing the Red Wyrm artwork and naming, browser-persistent dark mode, world-map Guild Hall and Dungeon Lodge destinations, compact current-route focus, explicit class/promotion guidance, and anchored map hover styling. Removed the Backup button. The detailed handoff distinguishes implemented systems from narrative scenes and future mission mechanics.
