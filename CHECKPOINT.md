@@ -17,3 +17,6 @@ Implemented CoopDungeon and CoopController with two-player invite-code parties, 
 
 ## Usability batch completed
 Six-character invites with legacy-code support and per-account join throttling; explicit waiting-for turn banner; persisted co-op loot summary; confirmed bulk selling with server-side equipped-item protection; lower resale prices; class-specific names for newly acquired weapons. No character-slot migration or casino changes. Targeted bulk-sale/pricing tests and one successful co-op HTTP run passed after fixing a local database compatibility issue. JavaScript syntax and build passed. User requested minimal testing and asked to be told when to push; do not push automatically.
+
+## Rescue and handoff batch
+Implemented one co-op rescue per run (60 seconds, living partner only, 35% restored health); rescue state remains an active party and completion/rewards remain transactional. Added persisted item protection for individual/bulk sales, and clearer exit/round/rescue summaries. Focused rescue and sale-protection checks passed, Java build and JS syntax passed. No broad simulations or cross-device visual pass. Share COWORKER-HANDOFF.md for completed/pending/release status. ROADMAP.md is the editable plan with gambling extras removed at the user's request. User will push; do not claim this batch is live before checking Render.

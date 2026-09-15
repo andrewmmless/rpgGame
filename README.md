@@ -62,3 +62,8 @@ This first co-op release is one shared boss encounter, not a full branching dung
 New parties use six-character, case-insensitive invite codes with a copy button; existing 16-character codes remain valid. Join attempts are rate-limited. Co-op has an explicit waiting-for indicator and a persisted per-player reward summary (including full-bag coin conversion). Older completed runs retain their battle logs.
 
 Equipment now supports selecting multiple unequipped items for a reviewed, atomic bulk sale. All selected IDs must be valid and unequipped or nothing is sold. Resale is `2 + item level + 4 × rarity tier + 2 × upgrades` coins (tiers: common 0, rare 1, epic 2); new prices apply to existing gear too. Newly acquired weapons use class-specific names without changing stats; existing item names remain unchanged.
+
+### Partner rescue and item protection
+One single-player knockdown per co-op run opens a 60-second rescue window. The survivor can revive their partner at 35% health. A later knockdown, both players falling, or an expired rescue ends the run. Rescue pauses are persisted and keep the normal character locked to the party. Mark equipment as protected to exclude it from individual and bulk selling; unprotect it explicitly to sell.
+
+See COWORKER-HANDOFF.md for release steps and verification limits, and ROADMAP.md for the active development plan.

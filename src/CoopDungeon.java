@@ -5,6 +5,7 @@ public class CoopDungeon {
     public String state="LOBBY",leader;
     public int round,enemyHealth,enemyMaxHealth,level;
     public long deadline;
+    public int rescuesUsed;
     public record Reward(String name,int xp,int coins,Equipment item,int convertedCoins) {}
     public List<Reward> rewards=new ArrayList<>();
     public List<Member> members=new ArrayList<>();
@@ -52,9 +53,22 @@ public class CoopDungeon {
         }
         enemyStatuses=enemy.snapshotStatuses();enemyHealth=enemy.getHealth();for(int i=0;i<2;i++){players[i].restoreResource(4);members.get(i).store(players[i]);members.get(i).action=null;}
         round++;deadline=now+60000;
-        if(Arrays.stream(players).anyMatch(Player::isDead)){state="DEFEAT";say("A partner fell. The wardens rescue both of you; no clear rewards this time.");}
+        if(Arrays.stream(players).anyMatch(Player::isDead)){
+            if(Arrays.stream(players).filter(Player::isDead).count()==1&&rescuesUsed==0){state="RESCUE";deadline=now+60000;say("A partner is down! The survivor has one minute to rescue them. One rescue per run.");}
+            else{state="DEFEAT";say("Your party fell. The wardens return you to town without clear rewards.");}
+        }
         else if(enemy.isDead()){state="VICTORY";say("The Warden falls! Each player earns an individual rare-or-epic item, "+xpReward()+" XP and "+coinReward()+" coins.");}
     }
+    public void rescue(String user,long now){
+        require(state.equals("RESCUE"),"No rescue is pending.");
+        Member survivor=members.stream().filter(m->m.username.equals(user)).findFirst().orElseThrow();
+        require(survivor.health>0,"Your partner must rescue you.");
+        if(now>deadline){state="DEFEAT";say("The rescue window closed. The wardens return you both to town.");return;}
+        Member fallen=members.stream().filter(m->m.health==0).findFirst().orElseThrow();
+        Player p=fallen.player();p.setHealth(Math.max(1,p.getMaxHealth()*35/100));p.clearStatuses();fallen.store(p);rescuesUsed++;
+        state=enemyHealth==0?"VICTORY":"BATTLE";deadline=now+60000;say(survivor.original.player().name()+" rescued "+p.getName()+" at 35% health. The rescue is spent for this run.");
+    }
+    public void endRescue(long now){require(state.equals("RESCUE"),"No rescue is pending.");require(now>deadline,"Your partner still has time to rescue you.");state="DEFEAT";say("The rescue window closed. Returned to town.");}
     public int xpReward(){return 40+12*(level-1);}public int coinReward(){return 40+8*(level-1);}
     public void say(String line){log.add(line);while(log.size()>25)log.remove(0);}
     public static void require(boolean condition,String message){if(!condition)throw new IllegalArgumentException(message);}

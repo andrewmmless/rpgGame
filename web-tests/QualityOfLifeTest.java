@@ -9,6 +9,13 @@ class QualityOfLifeTest {
         GameSession game=GameSession.restore(new GameSave(1,s.player(),s.mode(),s.area(),0,0,0,0,0,s.cleared(),s.claimed(),List.of(equipped,a,b),Map.of(Equipment.Slot.WEAPON,"equipped"),s.log(),null),new Random(1));
         GameSave before=game.snapshot();
         for(String value:List.of("a,equipped","a,missing","a,a","")){assertThrows(IllegalArgumentException.class,()->game.command("sell_many",value));assertEquals(before,game.snapshot());}
+        game.command("protect_item","a");
+        GameSession restored=GameSession.restore(game.snapshot(),new Random(1));
+        assertEquals(game.snapshot(),restored.snapshot());
+        GameSession protectedGame=game;GameSave protectedSave=game.snapshot();
+        assertThrows(IllegalArgumentException.class,()->protectedGame.command("sell","a"));
+        assertThrows(IllegalArgumentException.class,()->protectedGame.command("sell_many","a,b"));assertEquals(protectedSave,game.snapshot());
+        game.command("protect_item","a");
         game.command("sell_many","a,b");assertEquals(List.of(equipped),game.snapshot().inventory());assertEquals(a.value()+b.value(),game.snapshot().player().coins());
         GameSave sold=game.snapshot();assertThrows(IllegalArgumentException.class,()->game.command("sell_many","a,b"));assertEquals(sold,game.snapshot());
     }

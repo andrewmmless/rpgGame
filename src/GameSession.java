@@ -101,16 +101,17 @@ public final class GameSession {
             case "equip" -> {
                 inTown();Equipment item=item(value);equipped.put(item.slot(),item.id());applyEquipment();say("Equipped "+item.name()+".");
             }
+            case "protect_item" -> {inTown();Equipment item=item(value);String key="keep:"+item.id();if(!claimed.remove(key))claimed.add(key);say("Updated item sale protection.");}
             case "sell_many" -> {
                 inTown();String[] ids=value.split(",",-1);require(ids.length>=1&&ids.length<=30,"Choose 1–30 items.");
                 Set<String> unique=new HashSet<>(Arrays.asList(ids));require(unique.size()==ids.length,"An item was selected more than once.");
                 List<Equipment> items=unique.stream().map(this::item).toList();
-                require(items.stream().noneMatch(i->equipped.containsValue(i.id())),"Equipped items cannot be sold.");
+                require(items.stream().noneMatch(i->equipped.containsValue(i.id())||claimed.contains("keep:"+i.id())),"Equipped or protected items cannot be sold.");
                 int total=items.stream().mapToInt(Equipment::value).sum();player.addCoins(total);inventory.removeAll(items);
                 say("Sold "+items.size()+" items for "+total+" coins.");
             }
             case "sell" -> {
-                inTown();Equipment item=item(value);require(!equipped.containsValue(item.id()),"Unequip this item by equipping another before selling it.");
+                inTown();Equipment item=item(value);require(!claimed.contains("keep:"+item.id()),"Unprotect this item before selling it.");require(!equipped.containsValue(item.id()),"Unequip this item by equipping another before selling it.");
                 inventory.remove(item);player.addCoins(item.value());say("Sold "+item.name()+" for "+item.value()+" coins.");
             }
             case "upgrade" -> {
@@ -208,7 +209,7 @@ public final class GameSession {
         view.put("mode",mode);view.put("area",area);view.put("room",room);view.put("towerFloor",towerFloor);view.put("towerBest",towerBest);
         view.put("kills",kills);view.put("deaths",deaths);view.put("log",List.copyOf(log));view.put("cleared",Set.copyOf(cleared));view.put("claimed",Set.copyOf(claimed));
         view.put("chests",availableChests());view.put("shopPrice",20+player.getLevel()*6);
-        view.put("inventory",inventory.stream().map(i->Map.of("item",i,"equipped",i.id().equals(equipped.get(i.slot())),"value",i.value(),"upgradeCost",i.upgradeCost(),"attributeDescription",i.attribute().description())).toList());
+        view.put("inventory",inventory.stream().map(i->Map.of("item",i,"equipped",i.id().equals(equipped.get(i.slot())),"value",i.value(),"upgradeCost",i.upgradeCost(),"attributeDescription",i.attribute().description(),"protected",claimed.contains("keep:"+i.id()))).toList());
         view.put("regions",Campaign.REGIONS.stream().map(r->Map.of("id",r.area(),"name",r.area().getDisplayName(),"subtitle",r.subtitle(),"story",r.story(),"boss",r.boss(),"quest",r.quest(),"minLevel",r.area().getMinLevel(),"maxLevel",r.area().getMaxLevel(),"unlocked",unlocked(r.area()))).toList());
         view.put("abilities",player.getAbilities().stream().map(a->Map.of("id",a.id(),"name",a.name(),"cost",a.cost(),"unlockLevel",a.unlockLevel(),"cooldown",combat==null?0:combat.getCooldown(a.id()),"baseCooldown",a.cooldown())).toList());
         if(mode==Mode.COMBAT)view.put("enemy",Map.of("name",enemy.getName(),"level",enemy.getLevel(),"health",enemy.getHealth(),"maxHealth",enemy.getMaxHealth(),"boss",enemy.isBoss(),"intent",enemy.intent(combat.getRound()),"statuses",enemy.getStatuses()));

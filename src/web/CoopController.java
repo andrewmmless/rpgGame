@@ -21,7 +21,7 @@ public class CoopController {
     public record Join(String code) {} public record Move(String id,int round,String action,String value) {}
     private String membership(String user){return jdbc.query("SELECT party_id FROM hearthglen.rpg_coop_members WHERE username=?",(rs,n)->rs.getString(1),user).stream().findFirst().orElse(null);}
     private CoopDungeon party(String id,boolean lock){return jdbc.query("SELECT payload FROM hearthglen.rpg_coop WHERE id=?"+(lock?" FOR UPDATE":""),(rs,n)->json.readValue(rs.getString(1),CoopDungeon.class),id).stream().findFirst().orElseThrow(()->new IllegalArgumentException("Party not found."));}
-    private void save(String id,CoopDungeon party){jdbc.update("UPDATE hearthglen.rpg_coop SET payload=?,active=? WHERE id=?",json.writeValueAsString(party),Set.of("LOBBY","BATTLE").contains(party.state),id);}
+    private void save(String id,CoopDungeon party){jdbc.update("UPDATE hearthglen.rpg_coop SET payload=?,active=? WHERE id=?",json.writeValueAsString(party),Set.of("LOBBY","BATTLE","RESCUE").contains(party.state),id);}
     private GameSave character(String user){String text=jdbc.query("SELECT payload FROM hearthglen.rpg_saves WHERE username=? FOR UPDATE",(rs,n)->rs.getString(1),user).stream().findFirst().orElseThrow(()->new IllegalArgumentException("Create a normal character first."));return json.readValue(text,GameSave.class);}
     private GameSave eligible(String user){GameSave save=character(user);CoopDungeon.require(membership(user)==null,"Leave your existing party first.");Boolean ranked=jdbc.queryForObject("SELECT ranked FROM hearthglen.rpg_scores WHERE username=?",Boolean.class,user);CoopDungeon.require(Boolean.TRUE.equals(ranked),"Co-op requires a normal, server-created character.");return save;}
     @GetMapping public Map<String,Object> get(Principal principal){String id=membership(principal.getName());return id==null?Map.of("joined",false):view(id,party(id,false),principal.getName());}
@@ -35,11 +35,13 @@ public class CoopController {
         switch(body.action()==null?"":body.action()){
             case "start" -> p.start(user,System.currentTimeMillis());
             case "choose" -> p.choose(user,body.round(),body.value(),System.currentTimeMillis(),new Random());
+            case "rescue" -> p.rescue(user,System.currentTimeMillis());
+            case "end_rescue" -> p.endRescue(System.currentTimeMillis());
             case "cover" -> p.cover(body.round(),System.currentTimeMillis(),new Random());
-            case "leave" -> {if(Set.of("LOBBY","BATTLE").contains(p.state)){p.state="ABANDONED";p.say("A player left. The party returned to town.");}jdbc.update("DELETE FROM hearthglen.rpg_coop_members WHERE username=? AND party_id=?",user,id);}
+            case "leave" -> {if(Set.of("LOBBY","BATTLE","RESCUE").contains(p.state)){p.state="ABANDONED";p.say("A player left. The party returned to town.");}jdbc.update("DELETE FROM hearthglen.rpg_coop_members WHERE username=? AND party_id=?",user,id);}
             default -> throw new IllegalArgumentException("Unknown party action.");
         }
-        if(before.equals("BATTLE")&&!p.state.equals("BATTLE"))finish(p);
+        if(Set.of("BATTLE","RESCUE").contains(before)&&!Set.of("BATTLE","RESCUE").contains(p.state))finish(p);
         save(id,p);return body.action().equals("leave")?Map.<String,Object>of("joined",false):view(id,p,user);
     });}
     private void finish(CoopDungeon party){
@@ -54,6 +56,6 @@ public class CoopController {
             if(won)party.say(member.original.player().name()+" found "+reward.name()+" ("+reward.rarity().name().toLowerCase(Locale.ROOT)+").");
         }
     }
-    private Map<String,Object> view(String id,CoopDungeon p,String user){Map<String,Object> out=new LinkedHashMap<>();out.put("joined",true);out.put("id",id);out.put("state",p.state);out.put("host",user.equals(p.leader));out.put("round",p.round);out.put("deadline",p.deadline);out.put("serverTime",System.currentTimeMillis());out.put("log",p.log);out.put("rewards",p.rewards);out.put("enemy",Map.of("name","Rootbound Warden","health",p.enemyHealth,"maxHealth",p.enemyMaxHealth,"intent",p.intent()));
+    private Map<String,Object> view(String id,CoopDungeon p,String user){Map<String,Object> out=new LinkedHashMap<>();out.put("joined",true);out.put("id",id);out.put("state",p.state);out.put("host",user.equals(p.leader));out.put("round",p.round);out.put("rescuesUsed",p.rescuesUsed);out.put("deadline",p.deadline);out.put("serverTime",System.currentTimeMillis());out.put("log",p.log);out.put("rewards",p.rewards);out.put("enemy",Map.of("name","Rootbound Warden","health",p.enemyHealth,"maxHealth",p.enemyMaxHealth,"intent",p.intent()));
         out.put("members",p.members.stream().map(m->{Player player=m.player();Map<String,Object> row=new LinkedHashMap<>();row.put("name",player.getName());row.put("type",player.getPlayerClass());row.put("level",player.getLevel());row.put("health",m.health);row.put("maxHealth",player.getMaxHealth());row.put("resource",m.resource);row.put("maxResource",player.getMaxResource());row.put("potions",m.potions);row.put("you",m.username.equals(user));row.put("ready",m.action!=null);row.put("action",m.action==null?"":m.action);row.put("abilities",player.getAvailableAbilities().stream().map(a->Map.of("id",a.id(),"name",a.name(),"cost",a.cost(),"cooldown",m.cooldowns.getOrDefault(a.id(),0))).toList());return row;}).toList());return out;}
 }
