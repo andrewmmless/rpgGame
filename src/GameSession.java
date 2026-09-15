@@ -155,7 +155,9 @@ public final class GameSession {
     private Equipment item(String id) { return inventory.stream().filter(i->i.id().equals(id)).findFirst().orElseThrow(()->new IllegalArgumentException("Item not found.")); }
     private void drop(boolean boss) {
         if(!boss && random.nextInt(100)>=55)return;
-        Equipment item=Equipment.regionalDrop(random,player.getLevel(),boss,player.getPlayerClass(),area);
+        Equipment item=towerFloor>0
+            ? Equipment.drop(random,Math.min(player.getLevel(),enemy.getLevel()),boss,player.getPlayerClass())
+            : Equipment.regionalDrop(random,player.getLevel(),boss,player.getPlayerClass(),area);
         if(inventory.size()>=30) {player.addCoins(item.value());say("Pack full: sold "+item.name()+" for "+item.value()+" coins.");}
         else {inventory.add(item);say("Found "+item.rarity().name().toLowerCase(Locale.ROOT)+" "+item.name()+". Equip it when you return to town.");}
     }

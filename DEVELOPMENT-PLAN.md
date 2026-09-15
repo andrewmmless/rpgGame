@@ -160,3 +160,9 @@ This document is the target design, not a claim that all listed behavior exists.
 Character slots: existing saves occupy slot 1 automatically. Each account has four slots, one per class. Gold, gear and progression are independent; guild/bond membership and Developer Lab access remain account-wide. The leaderboard currently shows the active character under the account identity. Leave your co-op party before switching. Existing solo encounters resume when returning to their character. There is no character deletion UI yet.
 
 Storage: hearthglen.rpg_saves holds the active character, rpg_character_slots holds inactive snapshots, and rpg_slot_state tracks the selection. Switching is transactional; stale character commands are rejected. New tables are additive and existing saves need no manual conversion.
+
+### Difficulty and equipment pass
+
+Implemented: level-ups add only the increase in maximum health/resource; XP requirements now grow from 50 using 20 per level plus a small quadratic term; heavy attacks use 2.6x damage and defending restores six extra resource; Tower gear uses player/encounter level instead of the region-25 ceiling; bulk sales gain a rare-item selector and preserve the open panel and page position on redraw. Existing levels and items are unchanged. Existing XP values remain valid, though the percentage toward the next level is lower.
+
+Focused verification: level-up recovery, legacy XP acceptance, defend versus heavy strike, and atomic/protected bulk selling. Balance is an initial tuning pass, not a full playtest. Sub-areas, per-fight auto-attack and deeper enemy patterns remain for the next pass.

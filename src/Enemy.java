@@ -27,7 +27,7 @@ public class Enemy extends Character {
             case DRAIN -> "Life drain — damage also heals the enemy";
         };
     }
-    public double attackMultiplier(int round) { return move(round)==Move.HEAVY?2.0:move(round)==Move.CHARGE?0:1; }
+    public double attackMultiplier(int round) { return move(round)==Move.HEAVY?2.6:move(round)==Move.CHARGE?0:1; }
     public void performTurn(int round, Player target, java.util.Random random, java.util.List<String> events) {
         Move next=move(round);
         if(next==Move.CHARGE) {events.add(name+" gathers strength. A heavy strike is coming!");return;}

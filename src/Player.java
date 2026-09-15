@@ -22,7 +22,10 @@ public abstract class Player extends Character {
         if(amount<0)throw new IllegalArgumentException("Negative XP");
         long total=(long)xp+amount;
         while(level<Balance.MAX_LEVEL && total>=Balance.xpNeeded(level)) {
-            total-=Balance.xpNeeded(level); level++; recalculateStats(); health=maxHealth; resource=getMaxResource();
+            int oldMaxHealth=maxHealth,oldMaxResource=getMaxResource();
+            total-=Balance.xpNeeded(level); level++; recalculateStats();
+            if(health>0)heal(maxHealth-oldMaxHealth);
+            restoreResource(getMaxResource()-oldMaxResource);
         }
         xp=level==Balance.MAX_LEVEL?0:(int)total;
     }

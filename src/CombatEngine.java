@@ -39,7 +39,7 @@ public final class CombatEngine {
         else switch(action) {
             case ATTACK -> events.add("Attack dealt "+enemy.receiveDamage(player.rollDamage(random,-2,2),DamageType.PHYSICAL)+" damage.");
             case ABILITY -> {player.spendResource(ability.cost());ability.effect().apply(player,enemy,random,events);cooldowns.put(ability.id(),ability.cooldown());}
-            case DEFEND -> {player.applyStatus(new StatusEffect("guard",StatusEffect.Kind.GUARD,0,2));events.add("You brace for the next attack.");}
+            case DEFEND -> {player.applyStatus(new StatusEffect("guard",StatusEffect.Kind.GUARD,0,2));player.restoreResource(6);events.add("You brace for the next attack and recover 6 resource.");}
             case POTION -> {player.usePotion();events.add("You drink a potion.");}
             case FLEE -> {if(random.nextDouble()<player.getFleeChance()){outcome=CombatResult.Outcome.FLED;events.add("You escaped.");}else events.add("Escape failed.");}
         }
@@ -60,7 +60,7 @@ public final class CombatEngine {
                 int xp=enemy.rollXpReward(random), coins=enemy.rollCoinReward(random), oldLevel=player.getLevel();
                 player.addCoins(coins);player.gainXp(xp);
                 events.add("Victory! +"+xp+" XP, +"+coins+" coins.");
-                if(player.getLevel()>oldLevel)events.add("Level up! Now level "+player.getLevel()+"; health and resource restored.");
+                if(player.getLevel()>oldLevel)events.add("Level up! Now level "+player.getLevel()+"; maximum health and resource increased.");
             }
         }
         round++;
