@@ -21,7 +21,7 @@ public record SubArea(int index,Area area,String name,int minLevel,int maxLevel,
     public boolean complete(Set<String> flags,Set<String> cleared){return flags.contains(key())||cleared.contains(area.name());}
     public boolean unlocked(Set<String> flags,Set<String> cleared){return complete(flags,cleared)||index==0||get(index-1).complete(flags,cleared);}
     public Enemy encounter(int room,int playerLevel,Random random){
-        int level=room==4?maxLevel:Math.max(minLevel,Math.min(maxLevel,playerLevel));
+        int level=room==4?(index==0?Math.min(maxLevel,playerLevel+1):maxLevel):Math.max(minLevel,Math.min(maxLevel,playerLevel));
         Enemy enemy=Campaign.encounter(area,level,room==4,random,0);
         if(room!=4)return enemy;
         int xp=Balance.enemyXp(level)*2;

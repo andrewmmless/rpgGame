@@ -13,6 +13,8 @@ public record Equipment(String id, String name, Slot slot, Rarity rarity, int le
         if(slot==Slot.ARMOUR && attribute!=WeaponAttribute.NONE)throw new IllegalArgumentException("Weapon attributes require a weapon");
         if (level < 1 || power < 1 || upgrades < 0 || upgrades > 5) throw new IllegalArgumentException("Invalid item");
     }
+    public boolean crownArmour(){return slot==Slot.ARMOUR&&rarity==Rarity.LEGENDARY&&name.equals("Crownfire plate");}
+    public String effectDescription(){return crownArmour()?"Ember bulwark: while guarded, take 15% less incoming non-true damage and recover 2 resource per hit. Unguarded, take 10% more non-true damage.":attribute.description();}
     public int value() { return 2 + level + rarity.ordinal() * 4 + upgrades * 2; }
     public int upgradeCost() { return 15 + level * 3 + upgrades * 15; }
     public Equipment upgrade() {

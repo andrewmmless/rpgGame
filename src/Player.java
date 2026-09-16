@@ -3,6 +3,12 @@ import java.util.*;
 public abstract class Player extends Character {
     private final PlayerClass playerClass;
     private int weaponBonus, armourBonus;
+    private boolean crownArmour;
+    public void equipCrownArmour(boolean equipped){crownArmour=equipped;}
+    @Override public int receiveDamage(int amount,DamageType type){
+        if(crownArmour&&type!=DamageType.TRUE&&amount>0){if(hasStatus(StatusEffect.Kind.GUARD)){amount=(amount*85+99)/100;restoreResource(2);}else amount=(amount*110+99)/100;}
+        return super.receiveDamage(amount,type);
+    }
     private Set<String> buildFlags=Set.of(),storyClears=Set.of();
     private WeaponAttribute weaponAttribute=WeaponAttribute.NONE;
     public WeaponAttribute getWeaponAttribute(){return weaponAttribute;}

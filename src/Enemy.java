@@ -24,23 +24,23 @@ public class Enemy extends Character {
     public String intent(int round) {
         return switch(move(round)) {
             case SAP -> "Chilling siphon — defend to protect your resource";
-            case RECOVER -> "Restoring vitality — stun to interrupt";
+            case RECOVER -> boss&&name.contains("Lich")?"Soul ritual — a damaging ability or stun interrupts healing":"Restoring vitality — stun to interrupt";
             case ATTACK -> "Attack";
             case CHARGE -> "Gathering strength";
-            case HEAVY -> "Heavy strike — defend!";
-            case GUARD -> "Guard — your next attack will be weakened";
-            case POISON -> "Poison strike — stun to interrupt";
+            case HEAVY -> boss&&BossPattern.regional(name)?"Heavy strike — defend! Includes a guardable 25% maximum-health impact":"Heavy strike — defend!";
+            case GUARD -> boss&&name.contains("Chieftain")?"Iron stance — attack now to crack the coming guard":"Guard — your next attack will be weakened";
+            case POISON -> boss&&name.contains("Wolf")?"Venomous pounce — guard blocks poison; stun interrupts":"Poison strike — stun to interrupt";
             case DRAIN -> "Life drain — damage also heals the enemy";
         };
     }
     public String advice(int round){return switch(move(round)){
         case CHARGE -> "An opening: attack, heal or work on the mission before the heavy strike.";
         case HEAVY -> "Defend now to halve damage, or interrupt with a stun.";
-        case GUARD -> "Save your strongest attack until the guard fades. Recover or work on the objective.";
-        case POISON -> "A stun stops the poison strike before it lands.";
+        case GUARD -> boss&&name.contains("Chieftain")?"Deal damage this turn to break the iron stance before its guard forms.":"Save your strongest attack until the guard fades. Recover or work on the objective.";
+        case POISON -> boss&&name.contains("Wolf")?"Guard prevents the poison; a stun stops the entire pounce.":"A stun stops the poison strike before it lands.";
         case DRAIN -> "Defending reduces damage and the health this enemy steals.";
         case SAP -> "Defend to block the resource drain. Ward disruption also provides guard.";
-        case RECOVER -> "Stun to prevent healing, or use the opening for your own recovery.";
+        case RECOVER -> boss&&name.contains("Lich")?"Use a damaging ability or stun to cancel the healing ritual. A basic attack alone will not interrupt it.":"Stun to prevent healing, or use the opening for your own recovery.";
         default -> "Balance damage with your health, resource and mission objective.";
     };}
     public double attackMultiplier(int round) { return move(round)==Move.HEAVY?2.6:move(round)==Move.CHARGE?0:1; }
@@ -56,8 +56,9 @@ public class Enemy extends Character {
         if(next==Move.RECOVER){int before=health;heal(Math.max(4,maxHealth/8));events.add(name+" recovered "+(health-before)+" health.");return;}
         if(next==Move.SAP){if(target.hasStatus(StatusEffect.Kind.GUARD))events.add("Your guard blocks the resource siphon.");else{int lost=Math.min(8,target.getResource());target.spendResource(lost);events.add(name+" drained "+lost+" resource.");}}
         int dealt=target.receiveDamage((int)Math.round(rollDamage(random,-1,1)*(next==Move.HEAVY?2.6:1)),DamageType.PHYSICAL);
+        if(boss&&BossPattern.regional(name)&&next==Move.HEAVY&&!target.isDead())dealt+=target.receiveDamage(Math.max(1,target.getMaxHealth()/4),DamageType.TRUE);
         events.add(name+" dealt "+dealt+" damage.");
-        if(next==Move.POISON && !target.isDead()) {
+        if(next==Move.POISON && !target.isDead() && !(boss&&name.contains("Wolf")&&target.hasStatus(StatusEffect.Kind.GUARD))) {
             target.applyStatus(new StatusEffect("poison",StatusEffect.Kind.DAMAGE_OVER_TIME,Math.max(2,level/2),2));events.add("Poison will hurt for two turns.");
         }
         if(next==Move.DRAIN) {heal(dealt/2);events.add(name+" drained "+dealt/2+" health.");}

@@ -49,7 +49,8 @@ public final class CombatEngine {
         player.endTurn();
         if(player.isDead())outcome=CombatResult.Outcome.DEFEAT;
         if(outcome==CombatResult.Outcome.ACTIVE && !enemy.isDead()) {
-            if(!enemy.hasStatus(StatusEffect.Kind.STUN)) {
+            if(BossCounters.interrupt(enemy,planned,!stunned&&action==CombatAction.ABILITY&&enemy.getHealth()<healthBeforeAction,healthBeforeAction-enemy.getHealth(),events)) { }
+            else if(!enemy.hasStatus(StatusEffect.Kind.STUN)) {
                 enemy.performPlannedTurn(planned,player,random,events);
             }
             else events.add(enemy.getName()+" is stunned.");

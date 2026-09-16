@@ -16,6 +16,7 @@ public final class StoryPath {
             if(next==null){title="For Cindergard";words=SubArea.get(11).ending();button="Recall your service";action="recap";}
             else {title=next.mission();words=next.opening()+" Mission: "+next.name()+" (recommended levels "+next.minLevel()+"–"+next.maxLevel()+").";button="Review your orders";action="recap";}
         }
+        if(!StoryConsequences.choice(flags).isEmpty())words+=" Your company chose "+(StoryConsequences.choice(flags).equals("protect")?"a sealed inquiry: protect Cedric’s witness in the Drowned Archive.":"a public inquiry: secure the wards and expose the evidence.");
         return Map.of("title",title,"speaker","Captain Elin Ward · Crown frontier company","text",words,"button",button,"action",action,"accepted",accepted,"reported",reported);
     }
     public static String speak(String action,Set<String> flags,Set<String> cleared) {
