@@ -30,4 +30,18 @@ public class CharacterSlots {
         if(target.isPresent()){String payload=target.get().getKey();jdbc.update("INSERT INTO hearthglen.rpg_saves(username,version,payload) VALUES (?,0,?)",user,payload);games.scores(user,GameSession.restore(json.readValue(payload,GameSave.class),new Random()),target.get().getValue());}
         if(jdbc.update("UPDATE hearthglen.rpg_slot_state SET active_slot=?,generation=generation+1 WHERE username=?",body.slot(),user)==0)jdbc.update("INSERT INTO hearthglen.rpg_slot_state(username,active_slot,generation) VALUES (?,?,1)",user,body.slot());return games.load(user);
     });}
+    public record Deletion(int slot,long generation,Boolean confirmed) {}
+    @PostMapping("/delete") public Map<String,Object> delete(Principal principal,@RequestBody Deletion body){String user=principal.getName();return tx.execute(status->{
+        SocialStore.lock(jdbc);validate(jdbc,user,body.generation());
+        CoopDungeon.require(Boolean.TRUE.equals(body.confirmed()),"Confirm character deletion first.");
+        CoopDungeon.require(body.slot()>=0&&body.slot()<4,"Choose one of four slots.");
+        CoopDungeon.require(jdbc.queryForObject("SELECT COUNT(*) FROM hearthglen.rpg_coop_members WHERE username=?",Integer.class,user)==0,"Leave your co-op party before deleting a character.");
+        int current=active(jdbc,user);boolean deletingActive=current==body.slot();
+        int count=deletingActive?jdbc.queryForObject("SELECT COUNT(*) FROM hearthglen.rpg_saves WHERE username=?",Integer.class,user):jdbc.queryForObject("SELECT COUNT(*) FROM hearthglen.rpg_character_slots WHERE username=? AND slot=?",Integer.class,user,body.slot());
+        CoopDungeon.require(count>0,"This character slot is already empty.");
+        jdbc.update("DELETE FROM hearthglen.rpg_character_slots WHERE username=? AND slot=?",user,body.slot());
+        if(deletingActive){jdbc.update("DELETE FROM hearthglen.rpg_saves WHERE username=?",user);jdbc.update("DELETE FROM hearthglen.rpg_scores WHERE username=?",user);}
+        if(jdbc.update("UPDATE hearthglen.rpg_slot_state SET generation=generation+1 WHERE username=?",user)==0)jdbc.update("INSERT INTO hearthglen.rpg_slot_state(username,active_slot,generation) VALUES (?,?,1)",user,current);
+        return view(user);
+    });}
 }

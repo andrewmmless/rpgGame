@@ -1,4 +1,4 @@
-"""One isolated two-player run, with reconnect and duplicate-reward checks."""
+"""Isolated character switching and deletion checks; never touches real saves."""
 from pathlib import Path
 exec(Path(__file__).with_name('web_smoke.py').read_text().split('with tempfile.TemporaryDirectory')[0])
 with tempfile.TemporaryDirectory(prefix='wayfarer-coop-') as tmp:
@@ -27,11 +27,24 @@ with tempfile.TemporaryDirectory(prefix='wayfarer-coop-') as tmp:
         c.request('/api/characters/select',dict(slot=2,generation=2))
         c.request('/api/character',dict(name='Duplicate',playerClass='MAGE',generation=3),expect=400)
         c.request('/api/characters/select',dict(slot=1,generation=3));assert c.request('/api/export')==second
-        party=c.request('/api/coop/create',{})
+        party=c.request('/api/coop/create',dict(generation=4))
         c.request('/api/characters/select',dict(slot=0,generation=4),expect=400)
+        c.request('/api/characters/delete',dict(slot=0,generation=4,confirmed=True),expect=400)
         c.request('/api/coop/move',dict(id=party['id'],round=party['round'],action='leave',value=''))
         p.terminate();p.wait(timeout=15);p=start();c=Client(base);c.login('slots_test',password)
         assert c.request('/api/export')==second
         c.request('/api/characters/select',dict(slot=0,generation=4));assert c.request('/api/export')==original
+        c.request('/api/characters/delete',dict(slot=1,generation=5,confirmed=False),expect=400)
+        c.request('/api/characters/delete',dict(slot=1,generation=4,confirmed=True),expect=409)
+        view=c.request('/api/characters/delete',dict(slot=1,generation=5,confirmed=True));assert view['generation']==6 and view['slots'][1]['empty']
+        assert c.request('/api/export')==original
+        view=c.request('/api/characters/delete',dict(slot=0,generation=6,confirmed=True));assert view['generation']==7 and view['slots'][0]['empty']
+        assert c.request('/api/game')['needsCharacter']
+        c.request('/api/characters/delete',dict(slot=0,generation=7,confirmed=True),expect=400)
+        c.request('/api/command',dict(version=0,action='rest',generation=6),expect=409)
+        c.request('/api/character',dict(name='Replacement',playerClass='MAGE',generation=7))
+        c.request('/api/characters/select',dict(slot=1,generation=7))
+        assert c.request('/api/game')['needsCharacter']
+        print('Deletion passed: confirmation, party lock, stale generations, active/inactive deletion, class reuse and no archived resurrection.')
         print('Character slots passed: separate saves, stale request protection, one per class, party lock and restart persistence.')
     finally:p.terminate();p.wait(timeout=15)
