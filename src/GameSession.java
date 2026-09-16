@@ -48,6 +48,8 @@ public final class GameSession {
         if (value == null) value = "";
         switch(action) {
             case "npc_accept","npc_deliver" -> {inTown();say(NpcQuests.command(action,value,player,claimed,cleared));}
+            case "upgrade_tool" -> {inTown();say(Gathering.valueOf(value).upgrade(player,claimed,cleared));}
+            case "survey" -> {inTown();String[] parts=value.split(":");require(parts.length==2,"Choose a site.");say(Gathering.valueOf(parts[0]).gather(Integer.parseInt(parts[1]),player,claimed,cleared,random,true));}
             case "gather","sell_material" -> {inTown();String[] parts=value.split(":");require(parts.length==2,"Choose a gathering site.");Gathering profession=Gathering.valueOf(parts[0]);int tier=Integer.parseInt(parts[1]);say(action.equals("gather")?profession.gather(tier,player,claimed,cleared,random):profession.sell(tier,player,claimed));}
             case "attribute","specialise","upgrade_ability","loadout","reset_build" -> {inTown();CharacterBuild.command(action,value,player,claimed,cleared);say("Character build updated. Rest to fill any increased health or resource capacity.");}
             case "craft" -> {inTown();Equipment item=Crafting.craft(value,player,claimed,cleared,inventory.size());if(item!=null){inventory.add(item);if(item.rarity()==Equipment.Rarity.LEGENDARY)claimed.add("keep:"+item.id());}say("Crafted "+Crafting.recipe(value).name()+".");}
