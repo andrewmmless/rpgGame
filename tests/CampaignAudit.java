@@ -2,6 +2,7 @@ import java.util.*;
 public class CampaignAudit {
  @SuppressWarnings("unchecked") public static void main(String[] args){
   GameSession g=new GameSession(PlayerClass.valueOf(args.length==0?"WARRIOR":args[0]).create("Audit"),new Random(41));int turns=0,failures=0;List<String> rows=new ArrayList<>();
+  g.command("story","brief");g.command("story","accept");
   for(SubArea route:SubArea.ALL){
    if(!g.snapshot().mode().equals("TOWN"))g.command("town","");
    g.command("rest","");while(g.snapshot().player().potions()<3&&g.snapshot().player().coins()>=8)g.command("buy_potion","");
@@ -29,6 +30,7 @@ public class CampaignAudit {
    rows.add(route.name()+": entry level "+entry+", exit "+g.snapshot().player().level()+", combat turns "+(turns-start)+", "+g.snapshot().mode());
    if(!g.snapshot().mode().equals("COMPLETE")){System.out.println("STOP: "+g.snapshot().log().subList(Math.max(0,g.snapshot().log().size()-5),g.snapshot().log().size()));break;}
   }
+  if(rows.size()!=SubArea.ALL.size()||failures!=0||!g.snapshot().mode().equals("COMPLETE"))throw new AssertionError("Campaign did not complete: "+rows);
   for(String row:rows)System.out.println(row);System.out.println("Total combat turns="+turns+" deaths="+failures);
  }
 }
