@@ -31,7 +31,9 @@ public final class GameSession {
         int level=Math.max(route.minLevel(),Math.min(route.maxLevel(),player.getLevel()));
         return Equipment.regionalDrop(random,level,boss,player.getPlayerClass(),route.area());
     }
-    private boolean missionActive(){return route()!=null&&claimed.contains("mission:enabled");}
+    private boolean rivalActive(){return claimed.stream().anyMatch(f->f.startsWith("rival:active:"));}
+    private int rivalValue(String key){String prefix="rival:"+key+":";return claimed.stream().filter(f->f.startsWith(prefix)).mapToInt(f->Integer.parseInt(f.substring(prefix.length()))).findFirst().orElseThrow();}
+    private boolean missionActive(){return !rivalActive()&&route()!=null&&claimed.contains("mission:enabled");}
     private int missionValue(String key,int fallback){String prefix="mission:"+key+":";return claimed.stream().filter(f->f.startsWith(prefix)).mapToInt(f->Integer.parseInt(f.substring(prefix.length()))).findFirst().orElse(fallback);}
     private void setMissionValue(String key,int value){String prefix="mission:"+key+":";claimed.removeIf(f->f.startsWith(prefix));claimed.add(prefix+value);}
     private void workObjective(){
@@ -43,11 +45,16 @@ public final class GameSession {
     private int totalXp(){int total=player.getXp();for(int level=1;level<player.getLevel();level++)total+=Balance.xpNeeded(level);return total;}
     private void rewardAdd(String key,int value){if(claimed.contains("mission:ledger")&&value>0)setMissionValue("reward_"+key,missionValue("reward_"+key,0)+value);}
     public void command(String action,String value) {
-        int xpBefore=totalXp(),coinsBefore=player.getCoins();
+        int xpBefore=totalXp(),coinsBefore=player.getCoins();boolean rivalWasActive=rivalActive();
         require(action!=null,"Choose an action.");
         if (value == null) value = "";
         switch(action) {
             case "npc_accept","npc_deliver" -> {inTown();say(NpcQuests.command(action,value,player,claimed,cleared));}
+            case "rival" -> {
+                inTown();RivalEncounters.Duel duel=RivalEncounters.get(Integer.parseInt(value));require(SubArea.get(duel.route()).complete(claimed,cleared)&&(duel.id()==0||claimed.contains(RivalEncounters.key(duel.id()-1))),"Complete the required story route and previous duel first.");require(!claimed.contains(RivalEncounters.key(duel.id())),"This rival encounter is already complete.");require(!player.isDead(),"Rest before the duel.");
+                claimed.add("rival:active:"+duel.id());claimed.add("rival:hp:"+player.getHealth());claimed.add("rival:resource:"+player.getResource());claimed.add("rival:potions:"+player.getPotions());
+                enemy=RivalEncounters.enemy(duel);combat=new CombatEngine(player,enemy,random);mode=Mode.COMBAT;say(duel.opening());say("Practice duel: health, resource and potions are restored afterward. No death penalty; no story gate.");
+            }
             case "upgrade_tool" -> {inTown();say(Gathering.valueOf(value).upgrade(player,claimed,cleared));}
             case "survey" -> {inTown();String[] parts=value.split(":");require(parts.length==2,"Choose a site.");say(Gathering.valueOf(parts[0]).gather(Integer.parseInt(parts[1]),player,claimed,cleared,random,true));}
             case "gather","sell_material" -> {inTown();String[] parts=value.split(":");require(parts.length==2,"Choose a gathering site.");Gathering profession=Gathering.valueOf(parts[0]);int tier=Integer.parseInt(parts[1]);say(action.equals("gather")?profession.gather(tier,player,claimed,cleared,random):profession.sell(tier,player,claimed));}
@@ -161,7 +168,7 @@ public final class GameSession {
             case "claim" -> claim(value);
             default -> throw new IllegalArgumentException("Unknown action.");
         }
-        if(Set.of("combat","objective","cache","spring","road_choice").contains(action)){rewardAdd("xp",Math.max(0,totalXp()-xpBefore));rewardAdd("coins",Math.max(0,player.getCoins()-coinsBefore));}
+        if(Set.of("combat","objective","cache","spring","road_choice").contains(action)&&!(action.equals("combat")&&value!=null&&rivalWasActive)){rewardAdd("xp",Math.max(0,totalXp()-xpBefore));rewardAdd("coins",Math.max(0,player.getCoins()-coinsBefore));}
         player.configureBuild(claimed,cleared);
     }
     private void fight(String value) {
@@ -177,6 +184,12 @@ public final class GameSession {
         CombatResult result=combat.performAction(action,id);
         require(result.accepted(),String.join(" ",result.events()));
         result.events().forEach(this::say);
+        if(rivalActive()){
+            if(result.outcome()!=CombatResult.Outcome.ACTIVE){int index=rivalValue("active"),hp=rivalValue("hp"),resource=rivalValue("resource"),potions=rivalValue("potions");boolean won=result.outcome()==CombatResult.Outcome.VICTORY;
+                claimed.removeIf(f->f.startsWith("rival:active:")||f.startsWith("rival:hp:")||f.startsWith("rival:resource:")||f.startsWith("rival:potions:"));player.setHealth(hp);player.setResource(resource);player.setPotions(potions);mode=Mode.TOWN;enemy=null;combat=null;
+                if(won){claimed.add(RivalEncounters.key(index));player.addCoins(20+index*20);say(RivalEncounters.get(index).victory());say("First duel victory: +"+(20+index*20)+" coins. Your equipment and story progress are unchanged.");}else say("Cedric offers a hand. ‘Again, when you're ready.’ Your health, resource and potions are restored; nothing was lost.");
+            }return;
+        }
         if(missionActive()&&result.outcome()!=CombatResult.Outcome.FLED){
             if(work&&able){setMissionValue("work",Math.min(2,missionValue("work",0)+1));say("Mission work "+missionValue("work",0)+"/2.");}
             if(StoryConsequences.objective(route().index(),claimed)==MissionObjective.ESCORT){int integrity=missionValue("integrity",100);setMissionValue("integrity",Math.max(0,Math.min(100,integrity+(work&&able?15:-5))));}
@@ -275,7 +288,7 @@ public final class GameSession {
         game.inventory.addAll(save.inventory());game.equipped.putAll(save.equipped());game.applyEquipment();game.log.clear();game.log.addAll(save.log());
         if(game.mode==Mode.COMBAT) {
             GameSave.BattleData b=Objects.requireNonNull(save.battle());int xp=Balance.enemyXp(b.level())*(b.boss()?2:1);
-            game.enemy=new Enemy(b.name(),b.level(),b.maxHealth(),b.attack(),b.defence(),4+b.level(),8+b.level()*2,xp,xp);
+            game.enemy=new Enemy(b.name(),b.level(),b.maxHealth(),b.attack(),b.defence(),game.rivalActive()?0:4+b.level(),game.rivalActive()?0:8+b.level()*2,game.rivalActive()?0:xp,game.rivalActive()?0:xp);
             if(b.boss())game.enemy.asBoss();game.enemy.restoreHealth(b.health());game.combat=new CombatEngine(p,game.enemy,random);
             game.combat.restoreProgress(b.round(),b.cooldowns());p.restoreStatuses(b.playerStatuses());game.enemy.restoreStatuses(b.enemyStatuses());
         }
@@ -286,6 +299,7 @@ public final class GameSession {
         view.put("player",Map.ofEntries(Map.entry("name",player.getName()),Map.entry("type",player.getPlayerClass()),Map.entry("rank",WorldNames.rank(player.getPlayerClass(),cleared)),Map.entry("title",cleared.contains(Area.DRAGONS_SPIRE.name())?"Dragonbane":""),Map.entry("level",player.getLevel()),Map.entry("xp",player.getXp()),Map.entry("nextXp",player.getXpToNextLevel()),Map.entry("health",player.getHealth()),Map.entry("maxHealth",player.getMaxHealth()),Map.entry("resource",player.getResource()),Map.entry("maxResource",player.getMaxResource()),Map.entry("coins",player.getCoins()),Map.entry("potions",player.getPotions()),Map.entry("attack",player.getAttackPower()),Map.entry("defence",player.getDefence()),Map.entry("statuses",player.getStatuses())));
         view.put("deathPenalty",Map.of("xpPercent",15+5*highestRoute().area().ordinal(),"coinPercent",10+5*highestRoute().area().ordinal(),"materialPercent",5+5*highestRoute().area().ordinal()));
         if(mode==Mode.COMPLETE&&claimed.contains("mission:ledger")&&route()!=null){int region=route().index()/3;view.put("expeditionRewards",Map.of("xp",missionValue("reward_xp",0),"coins",missionValue("reward_coins",0),"sold",missionValue("reward_sold",0),"items",inventory.stream().filter(i->claimed.contains("mission:loot:"+i.id())).toList(),"trophy",route().index()%3==2?BossMaterials.name(region):"","trophyOwned",BossMaterials.owned(claimed,region)));}
+        view.put("rivals",RivalEncounters.view(claimed,cleared));view.put("rivalActive",rivalActive());
         view.put("npcQuests",NpcQuests.view(claimed,cleared));
         view.put("recipes",Crafting.view(player,claimed,cleared));
         view.put("gathering",Arrays.stream(Gathering.values()).map(g->g.view(claimed,cleared)).toList());

@@ -8,6 +8,7 @@ public class Enemy extends Character {
     public enum Move { ATTACK, CHARGE, HEAVY, GUARD, POISON, DRAIN, SAP, RECOVER }
     public String phase(){return !boss?"":health*2<=maxHealth?"Desperate phase":"Opening phase";}
     public Move move(int round) {
+        if(name.startsWith("Cedric Ashford"))return switch(round%4){case 0->Move.ATTACK;case 1->Move.GUARD;case 2->Move.CHARGE;default->Move.HEAVY;};
         if(boss && BossPattern.regional(name))return BossPattern.move(name,round,health*2<=maxHealth);
         if(boss) return round%3==0?Move.CHARGE:round%3==1?Move.HEAVY:Move.ATTACK;
         if(level<3) return Move.ATTACK;
