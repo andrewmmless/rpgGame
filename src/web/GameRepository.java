@@ -49,7 +49,7 @@ public class GameRepository {
         catch(Exception e){throw new IllegalStateException("Could not prepare save.",e);}
     }
     private Map<String,Object> response(String user,GameSession game,long version) {
-        Map<String,Object> result=new LinkedHashMap<>(game.view());result.put("version",version);result.put("generation",CharacterSlots.generation(jdbc,user));return result;
+        Map<String,Object> result=new LinkedHashMap<>(game.view());result.put("coopActive",jdbc.queryForObject("SELECT COUNT(*) FROM hearthglen.rpg_coop_members m JOIN hearthglen.rpg_coop p ON p.id=m.party_id WHERE m.username=? AND p.active=TRUE",Integer.class,user)>0);result.put("version",version);result.put("generation",CharacterSlots.generation(jdbc,user));return result;
     }
     public Map<String,Object> load(String user) {
         return transactions.execute(status->{SocialStore.lock(jdbc);Row row=row(user);return row==null?Map.of("needsCharacter",true,"generation",CharacterSlots.generation(jdbc,user)):response(user,decode(row.payload()),row.version());});

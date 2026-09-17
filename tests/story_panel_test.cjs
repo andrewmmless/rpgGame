@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const source = fs.readFileSync(require('node:path').join(__dirname, '../resources/static/app.js'), 'utf8');
-const context = vm.createContext({game: null, busy: false, h: value => String(value ?? '')});
+const context = vm.createContext({game: null, busy: false, developerMode: false, h: value => String(value ?? '')});
 for (const name of ['btn', 'storyDecisionPanel', 'storyPanel']) {
   const line = source.split('\n').find(line => line.startsWith(`function ${name}(`));
   assert.ok(line, `${name} exists`);
@@ -25,3 +25,6 @@ for (const action of ['brief', 'accept', 'recap', 'report']) {
 context.game.routes = [];
 assert.ok(vm.runInContext('storyPanel()', context).includes('Campaign complete'));
 console.log('Story panel: briefing, acceptance, adventure, report and completion passed.');
+
+context.game.coopActive = true;
+assert.ok(vm.runInContext('btn("Accept", "story")', context).includes("disabled"));

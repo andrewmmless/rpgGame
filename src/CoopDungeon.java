@@ -4,6 +4,8 @@ import java.util.*;
 public class CoopDungeon {
     public String state="LOBBY",leader;
     public Integer storyRoute;
+    public String contractId="ROOTBOUND";
+    public DungeonContract contract(){return DungeonContract.get(contractId);}
     public String approach="standard";
     public int stageStartRound;
     public int stage,objectiveProgress,comboReadyRound;
@@ -22,17 +24,28 @@ public class CoopDungeon {
         public String username,action;
         public GameSave original;
         public int health,resource,potions;
+        public int syncedLevel;
         public Map<String,Integer> cooldowns=new HashMap<>();
         public List<Character.StatusState> statuses=new ArrayList<>();
         public Member() {}
         Member(String username,GameSave save){this.username=username;original=save;health=save.player().health();resource=save.player().resource();potions=Math.min(3,save.player().potions());}
-        Player player(){Player p=original.player().type().create(original.player().name());p.setLevel(original.player().level());p.configureBuild(original.claimed(),original.cleared());p.setHealth(health);p.setResource(resource);p.setPotions(potions);int weapon=0,armour=0;
+        Player player(){Player p=original.player().type().create(original.player().name());p.setLevel(syncedLevel>0?syncedLevel:original.player().level());
+            Set<String> flags=original.claimed();Set<String> clears=original.cleared();
+            if(syncedLevel>0&&syncedLevel<original.player().level()){
+                flags=new HashSet<>();clears=Set.of();
+                for(CharacterBuild.Attribute a:CharacterBuild.Attribute.values())CharacterBuild.put(flags,a.name(),CharacterBuild.value(original.claimed(),a.name())*(syncedLevel-1)/Math.max(1,original.player().level()-1));
+            }
+            p.configureBuild(flags,clears);p.setHealth(health);p.setResource(resource);p.setPotions(potions);int weapon=0,armour=0;
             for(Equipment e:original.inventory())if(e.id().equals(original.equipped().get(e.slot()))){if(e.slot()==Equipment.Slot.WEAPON){weapon=e.power();p.equipAttribute(e.attribute());}else armour=e.power();}
-            p.equipBonuses(weapon,armour);p.equipCrownArmour(original.inventory().stream().anyMatch(e->e.crownArmour()&&e.id().equals(original.equipped().get(Equipment.Slot.ARMOUR))));p.setSwordDamage(original.player().swordDamage());p.restoreStatuses(statuses);return p;}
+            if(syncedLevel>0&&syncedLevel<original.player().level()){weapon=Math.min(4+syncedLevel/2,weapon*syncedLevel/original.player().level());armour=Math.min(4+syncedLevel/2,armour*syncedLevel/original.player().level());p.equipAttribute(WeaponAttribute.NONE);}
+            p.equipBonuses(weapon,armour);p.equipCrownArmour((syncedLevel==0||syncedLevel>=original.player().level())&&original.inventory().stream().anyMatch(e->e.crownArmour()&&e.id().equals(original.equipped().get(Equipment.Slot.ARMOUR))));p.setSwordDamage(syncedLevel>0&&syncedLevel<original.player().level()?Math.min(4+syncedLevel/2,original.player().swordDamage()*syncedLevel/original.player().level()):original.player().swordDamage());p.restoreStatuses(statuses);return p;}
+        void sync(int target){Player before=player();syncedLevel=Math.min(target,original.player().level());Player after=player();health=health==0?0:Math.max(1,(int)((long)health*after.getMaxHealth()/before.getMaxHealth()));resource=(int)((long)resource*after.getMaxResource()/before.getMaxResource());}
+        int restoredHealth(){Player scaled=player();int saved=syncedLevel;syncedLevel=0;Player normal=player();syncedLevel=saved;return health==0?0:Math.max(1,(int)((long)health*normal.getMaxHealth()/scaled.getMaxHealth()));}
+        int restoredResource(){Player scaled=player();int saved=syncedLevel;syncedLevel=0;Player normal=player();syncedLevel=saved;return (int)((long)resource*normal.getMaxResource()/scaled.getMaxResource());}
         void store(Player p){health=p.getHealth();resource=p.getResource();potions=p.getPotions();statuses=p.snapshotStatuses();}
     }
-    public String missionName(){return storyRoute==null?"The Rootbound Gate":SubArea.get(storyRoute).name();}
-    public String enemyName(){return storyRoute==null?"Rootbound Warden":stage==2?SubArea.get(storyRoute).guardian():Campaign.region(SubArea.get(storyRoute).area()).enemies()[stage];}
+    public String missionName(){return storyRoute==null?contract().name():SubArea.get(storyRoute).name();}
+    public String enemyName(){return storyRoute==null?contract().boss():stage==2?SubArea.get(storyRoute).guardian():Campaign.region(SubArea.get(storyRoute).area()).enemies()[stage];}
     public MissionObjective objective(){return storyRoute==null?null:StoryConsequences.objective(storyRoute,members.isEmpty()?Set.of():members.get(0).original.claimed());}
     public void selectStory(int index){require(members.isEmpty()&&index>=0&&index<SubArea.ALL.size(),"Choose a story route.");storyRoute=index;}
     public void chooseApproach(String user,String choice){require(state.equals("LOBBY")&&user.equals(leader)&&storyRoute!=null,"Only the host can set a story approach before departure.");require(Set.of("standard","rescue","scout").contains(choice),"Choose an approach.");approach=choice;}
@@ -42,11 +55,11 @@ public class CoopDungeon {
         if(storyRoute!=null&&stage<2){stage++;prepareStage();for(Member m:members){Player p=m.player();p.heal(p.getMaxHealth()/5);p.restoreResource(12);m.store(p);}say("The company regroups: +20% health and 12 resource.");deadline=now+60000;}
         else{state="VICTORY";say(storyRoute==null?"The Warden falls! Individual rewards are ready.":StoryConsequences.ending(storyRoute,SubArea.get(storyRoute).ending(),members.get(0).original.claimed()));}
     }
-    public void add(String user,GameSave save){if(storyRoute!=null)require(SubArea.get(storyRoute).unlocked(save.claimed(),save.cleared()),"This story route must be unlocked for both characters. Choose the earlier player's route.");require(state.equals("LOBBY")&&members.size()<2,"This party is full or already started.");require(save.mode().equals("TOWN")&&save.player().health()>0,"Return to town and recover before joining.");if(!members.isEmpty())require(Math.abs(members.get(0).original.player().level()-save.player().level())<=3,"Party members must be within three levels of each other.");members.add(new Member(user,save));if(leader==null)leader=user;}
-    public void start(String user,long now){require(user.equals(leader),"Only the host can start.");require(state.equals("LOBBY")&&members.size()==2,"Two players are needed.");if("rescue".equals(approach)){require(members.stream().allMatch(m->m.resource>=12),"Both partners need 12 resource for relief duty.");for(Member m:members)m.resource-=12;say("Relief duty: you escort survivors alongside the mission. Completion earns extra coins.");}else if("scout".equals(approach))say("Scouted approach: guard on the first turn of each stage; completion pays 20% fewer coins.");level=members.stream().mapToInt(m->m.original.player().level()).max().orElse(1);state="BATTLE";deadline=now+60000;
+    public void add(String user,GameSave save){if(storyRoute!=null)require(SubArea.get(storyRoute).unlocked(save.claimed(),save.cleared()),"This story route must be unlocked for both characters. Choose the earlier player's route.");require(state.equals("LOBBY")&&members.size()<2,"This party is full or already started.");require(save.mode().equals("TOWN")&&save.player().health()>0,"Return to town and recover before joining.");if(storyRoute==null)require(contract().unlocked(save),"Both players must complete the preceding region before this dungeon.");members.add(new Member(user,save));if(leader==null)leader=user;}
+    public void start(String user,long now){require(user.equals(leader),"Only the host can start.");require(state.equals("LOBBY")&&members.size()==2,"Two players are needed.");if("rescue".equals(approach)){require(members.stream().allMatch(m->m.resource>=12),"Both partners need 12 resource for relief duty.");for(Member m:members)m.resource-=12;say("Relief duty: you escort survivors alongside the mission. Completion earns extra coins.");}else if("scout".equals(approach))say("Scouted approach: guard on the first turn of each stage; completion pays 20% fewer coins.");level=members.stream().mapToInt(m->m.original.player().level()).min().orElse(1);int cap=storyRoute==null?contract().maxLevel():SubArea.get(storyRoute).maxLevel();int shared=Math.min(level,cap);for(Member m:members)m.sync(shared);level=Math.min(level,cap);say("Party level sync: "+shared+". Higher-level partners use scaled stats, equipment and the class abilities available at this level.");state="BATTLE";deadline=now+60000;
         if(storyRoute!=null){SubArea route=SubArea.get(storyRoute);level=Math.max(route.minLevel(),Math.min(route.maxLevel(),level));say(route.opening());prepareStage();}
-        else{enemyMaxHealth=160+28*(level-1);enemyHealth=enemyMaxHealth;say("The Rootbound Warden blocks the ruined gate. Choose moves together.");}}
-    public boolean regionalBoss(){return storyRoute!=null&&stage==2&&storyRoute%3==2;}
+        else{level=Math.max(contract().minLevel(),level);enemyMaxHealth=160+28*(level-1);enemyHealth=enemyMaxHealth;say(contract().description());}}
+    public boolean regionalBoss(){return storyRoute==null?!contract().id().equals("ROOTBOUND"):stage==2&&storyRoute%3==2;}
     private Enemy bossEnemy(){Enemy e=new Enemy(enemyName(),level,enemyMaxHealth,16+3*(level-1),5+level,0,0,0,0).asBoss();e.restoreHealth(enemyHealth);return e;}
     public String phase(){return regionalBoss()?bossEnemy().phase():"";}
     public String intent(){if(regionalBoss()&&enemyHealth>0)return bossEnemy().intent(round)+" · Target: "+members.get(round%2).original.player().name()+". Protect can intercept; both guard against heavy sweeps.";if(enemyHealth==0)return "Enemy defeated — complete the objective.";String target=members.size()<2?"your party":members.get(round%2).original.player().name();return round%3==2?"Heavy strike against "+target+" — defend or have your partner protect you.":round%3==1?"Root sweep hits both players.":"Strike against "+target+".";}

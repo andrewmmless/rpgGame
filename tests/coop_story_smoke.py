@@ -22,6 +22,8 @@ with tempfile.TemporaryDirectory(prefix='wayfarer-coop-') as tmp:
         a.request('/api/coop/create',dict(route=2),expect=400)
         party=a.request('/api/coop/create',dict(route=0));party=b.request('/api/coop/join',dict(code=party['id']))
         def move(c,view,action,value='',expect=200):return c.request('/api/coop/move',dict(id=view['id'],round=view['round'],action=action,value=value),expect=expect)
+        assert a.request('/api/game')['coopActive'] and b.request('/api/game')['coopActive']
+        assert party['scene']['title']=='Food for the frontier'
         party=move(a,party,'start');party=move(a,party,'choose','OBJECTIVE')
         p.terminate();p.wait(timeout=15);p=start()
         a,b=Client(base),Client(base);a.login('story_one',password);b.login('story_two',password)
@@ -40,6 +42,9 @@ with tempfile.TemporaryDirectory(prefix='wayfarer-coop-') as tmp:
                 choices.append(choice)
             move(a,party,'choose',choices[0]);party=move(b,party,'choose',choices[1])
         assert party['state']=='VICTORY',party
+        assert not a.request('/api/game')['coopActive']
+        assert 'Hollow Reach' in party['scene']['next']
+        assert 'wagons' in party['scene']['text']
         saves=[c.request('/api/export') for c in [a,b]]
         assert all('route:clear:0' in s['claimed'] for s in saves)
         assert all(len(s['inventory'])==1 for s in saves)
